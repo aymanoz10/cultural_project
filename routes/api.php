@@ -117,6 +117,8 @@ Route::prefix('centers')->group(function () {
         Route::post('/', [CulturalCenterController::class, 'add']);
         Route::post('/{id}', [CulturalCenterController::class, 'edit']);
         Route::delete('/{id}', [CulturalCenterController::class, 'remove']);
+        Route::post('/{id}/photos', [CulturalCenterController::class, 'addPhotos']);
+        Route::delete('/photos/{photoId}', [CulturalCenterController::class, 'removePhoto']);
     });
 });
 

@@ -7,21 +7,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class CulturalCenterResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
-   public function toArray(Request $request): array
-{
-    return [
-        'id' => $this->id,
-        'name' => $this->name,
-        'location' => $this->location,
-        'description' => $this->description,
-        // إرجاع الرابط الكامل للصورة
-        'image' => $this->image ? asset('storage/' . $this->image) : null,
-        'created_at' => $this->created_at->format('Y-m-d'),
-    ];
-}
+    public function toArray(Request $request): array
+    {
+        return [
+            'id'          => $this->id,
+            'name'        => $this->name,
+            'location'    => $this->location,
+            'description' => $this->description,
+            'photos'      => CulturalCenterPhotoResource::collection($this->whenLoaded('photos')),
+            'created_at'  => $this->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
 }
