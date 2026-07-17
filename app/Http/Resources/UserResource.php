@@ -16,7 +16,7 @@ class UserResource extends JsonResource
             'date_of_birth' => $this->date_of_birth?->format('Y-m-d'),
             'gender'      => $this->gender,
             'avatar'      => $this->avatar ? asset('storage/' . $this->avatar) : null,
-            'created_at'  => $this->created_at,
+            'created_at'  => $this->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 }

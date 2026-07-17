@@ -120,14 +120,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'رقم الهاتف مسجل مسبقاً'], Response::HTTP_UNPROCESSABLE_ENTITY); // 422
         }
 
-        $avatarPath = $request->hasFile('avatar')
-            ? $request->file('avatar')->store('avatars', 'public')
-            : null;
-
-        // دمج بيانات الـ Payload النظيفة مع الهاتف والصورة لإنشاء المستخدم
         $user = User::create(array_merge($otp->payload, [
-            'phone'  => $phone,
-            'avatar' => $avatarPath,
+            'phone' => $phone,
         ]));
 
         $token = $user->createToken('auth_token')->plainTextToken;

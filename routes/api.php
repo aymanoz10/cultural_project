@@ -174,7 +174,7 @@ Route::prefix('volunteering-activities')->group(function () {
 Route::get('/ads', [AdController::class, 'index']);
 
 Route::middleware('auth:admin')->prefix('ads')->group(function () {
-    Route::post('/', [AdController::class, 'add']);
+    Route::post('/add', [AdController::class, 'add']);
     Route::post('/{id}', [AdController::class, 'edit']);
     Route::delete('/{id}', [AdController::class, 'remove']);
 });

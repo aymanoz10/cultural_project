@@ -14,9 +14,8 @@ class VerifyRegisterOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'phone'  => 'required|string',
-            'code'   => 'required|string|size:6',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'phone' => 'required|string',
+            'code'  => 'required|string|size:6',
         ];
     }
 }
