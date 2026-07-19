@@ -35,6 +35,7 @@ class ActivityController extends Controller
             'cultural_center_id' => 'required|exists:cultural_centers,id',
             'type'               => ['required', Rule::in(Activity::TYPES)],
             'title'              => 'required|string',
+            'host_name'          => 'nullable|string|max:255',
             'description'        => 'nullable|string',
             'start_time'         => 'required|date',
             'end_time'           => 'required|date|after:start_time',
@@ -44,9 +45,13 @@ class ActivityController extends Controller
             'image'             => 'nullable|image|max:2048',
         ]);
 
+        if ($this->hasConflict($request->start_time, $request->end_time, $request->hall_id, $request->theater_id)) {
+            return response()->json(['message' => 'يوجد فعالية في نفس المكان والوقت'], 422);
+        }
+
         $data = $request->only([
             'cultural_center_id', 'type', 'hall_id', 'theater_id',
-            'title', 'description', 'start_time', 'end_time', 'capacity',
+            'title', 'host_name', 'description', 'start_time', 'end_time', 'capacity',
         ]);
 
         if ($request->hasFile('image')) {
@@ -65,12 +70,22 @@ class ActivityController extends Controller
         $request->validate([
             'type'        => ['sometimes', 'required', Rule::in(Activity::TYPES)],
             'title'       => 'sometimes|required|string',
+            'host_name'   => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'start_time'  => 'sometimes|required|date',
             'end_time'    => 'sometimes|required|date|after:start_time',
             'capacity'    => 'nullable|integer|min:1',
             'image'      => 'nullable|image|max:2048',
         ]);
+
+        $startTime = $request->start_time ?? $activity->start_time;
+        $endTime = $request->end_time ?? $activity->end_time;
+        $hallId = $request->hall_id ?? $activity->hall_id;
+        $theaterId = $request->theater_id ?? $activity->theater_id;
+
+        if ($this->hasConflict($startTime, $endTime, $hallId, $theaterId, $activity->id)) {
+            return response()->json(['message' => 'يوجد فعالية في نفس المكان والوقت'], 422);
+        }
 
         $data = $request->except(['image', '_method']);
 
@@ -97,5 +112,41 @@ class ActivityController extends Controller
         $activity->delete();
 
         return response()->json(['success' => true], 200);
+    }
+
+    public function finished()
+    {
+        $activities = Activity::where('end_time', '<', now())->latest('end_time')->get();
+
+        return ActivityResource::collection($activities);
+    }
+
+    public function coming()
+    {
+        $activities = Activity::where('start_time', '>', now())->orderBy('start_time', 'asc')->get();
+
+        return ActivityResource::collection($activities);
+    }
+
+    private function hasConflict(string $startTime, string $endTime, ?int $hallId, ?int $theaterId, ?int $excludeId = null): bool
+    {
+        $query = Activity::where('start_time', '<', $endTime)
+            ->where('end_time', '>', $startTime);
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        if ($hallId) {
+            $conflict = (clone $query)->where('hall_id', $hallId)->exists();
+            if ($conflict) return true;
+        }
+
+        if ($theaterId) {
+            $conflict = (clone $query)->where('theater_id', $theaterId)->exists();
+            if ($conflict) return true;
+        }
+
+        return false;
     }
 }

@@ -22,6 +22,7 @@ class Activity extends Model
         'hall_id',
         'theater_id',
         'title',
+        'host_name',
         'description',
         'start_time',
         'end_time',

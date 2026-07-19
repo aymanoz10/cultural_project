@@ -77,12 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [SuggestionController::class, 'edit']);
         Route::delete('/{id}', [SuggestionController::class, 'remove']);
     });
-
-    Route::prefix('volunteerings')->group(function () {
-        Route::get('/', [VolunteeringController::class, 'index']);
-        Route::post('/', [VolunteeringController::class, 'add']);
-    });
 });
+
+Route::post('/volunteerings', [VolunteeringController::class, 'add']);
 
 // ═══════════════════════════════════════
 // Protected Admin Routes
@@ -94,6 +91,7 @@ Route::middleware('auth:admin')->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/suggestions', [AdminSuggestionController::class, 'index']);
+    Route::get('/volunteerings', [VolunteeringController::class, 'index']);
     Route::put('/volunteerings/{id}/status', [VolunteeringController::class, 'updateStatus']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
@@ -154,6 +152,8 @@ Route::prefix('libraries')->group(function () {
 
 Route::prefix('activities')->group(function () {
     Route::get('/', [ActivityController::class, 'index']);
+    Route::get('/finished', [ActivityController::class, 'finished']);
+    Route::get('/coming', [ActivityController::class, 'coming']);
     Route::get('/{activityId}/wait-list', [ReservationController::class, 'waitList']);
 
     Route::middleware('auth:admin')->group(function () {

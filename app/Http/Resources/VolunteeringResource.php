@@ -11,18 +11,23 @@ class VolunteeringResource extends JsonResource
     {
         return [
             'id'                       => $this->id,
+            'first_name'               => $this->first_name,
+            'last_name'                => $this->last_name,
+            'email'                    => $this->email,
+            'whatsapp_number'          => $this->whatsapp_number,
+            'birthday_date'            => $this->birthday_date,
+            'address'                  => $this->address,
+            'education_level'          => $this->education_level,
+            'has_volunteered_before'   => $this->has_volunteered_before,
+            'previous_experiences'     => $this->previous_experiences,
+            'why_volunteer'            => $this->why_volunteer,
+            'volunteering_interest'    => $this->volunteering_interest,
+            'tools'                    => $this->tools,
+            'center'                   => $this->center,
+            'available_times'          => $this->available_times,
+            'notes'                    => $this->notes,
             'status'                   => $this->status,
-            'form_data'                => $this->form_data,
-            'volunteering_activity_id' => $this->volunteering_activity_id,
-            'volunteering_activity'    => $this->whenLoaded(
-                'volunteeringActivity',
-                fn () => new VolunteeringActivityResource($this->volunteeringActivity)
-            ),
-            'user'                     => $this->whenLoaded('user', fn () => [
-                'id'   => $this->user->id,
-                'name' => $this->user->name,
-            ]),
-            'created_at'               => $this->created_at,
+            'created_at'               => $this->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 }

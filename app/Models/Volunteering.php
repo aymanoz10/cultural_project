@@ -8,24 +8,27 @@ use Illuminate\Database\Eloquent\Model;
 class Volunteering extends Model
 {
     use HasFactory;
+
     protected $fillable = [
-        'user_id',
-        'volunteering_activity_id',
-        'form_data',
+        'first_name',
+        'last_name',
+        'email',
+        'whatsapp_number',
+        'birthday_date',
+        'address',
+        'education_level',
+        'has_volunteered_before',
+        'previous_experiences',
+        'why_volunteer',
+        'volunteering_interest',
+        'tools',
+        'center',
+        'available_times',
+        'notes',
         'status',
     ];
 
     protected $casts = [
-        'form_data' => 'array',
+        'has_volunteered_before' => 'boolean',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function volunteeringActivity()
-    {
-        return $this->belongsTo(VolunteeringActivity::class);
-    }
 }

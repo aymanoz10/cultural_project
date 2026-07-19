@@ -16,9 +16,10 @@ class ActivityResource extends JsonResource
             'hall_id'            => $this->hall_id,
             'theater_id'         => $this->theater_id,
             'title'              => $this->title,
+            'host_name'          => $this->host_name,
             'description'        => $this->description,
-            'start_time'         => $this->start_time,
-            'end_time'           => $this->end_time,
+            'start_time'         => $this->start_time?->format('Y-m-d H:i:s'),
+            'end_time'           => $this->end_time?->format('Y-m-d H:i:s'),
             'capacity'           => $this->capacity,
             'available_seats'    => $this->capacity !== null
                 ? max(0, $this->capacity - $this->confirmedReservationsCount())
