@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\CulturalCenter;
+use App\Models\Hall;
+use App\Models\Theater;
 use App\Http\Resources\ActivityResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -10,25 +13,41 @@ use Illuminate\Validation\Rule;
 
 class ActivityController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Activity::query();
+    // عرض قائمة الفعاليات (يدعم Web + API)
+   public function index(Request $request)
+{
+    $query = Activity::with(['culturalCenter', 'hall', 'theater']);
 
-        if ($request->has('search')) {
-            $query->where('title', 'like', "%{$request->search}%");
-        }
-
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
-        }
-
-        if ($request->has('center_id')) {
-            $query->where('cultural_center_id', $request->center_id);
-        }
-
-        return ActivityResource::collection($query->get());
+    if ($request->filled('search')) {
+        $query->where('title', 'like', "%{$request->search}%");
     }
 
+    if ($request->filled('center_id')) {
+        $query->where('cultural_center_id', $request->center_id);
+    }
+
+    $activities = $query->latest('start_time')->paginate(10);
+    
+    // جلب المراكز لفلترة القائمة
+    $centers = \App\Models\CulturalCenter::all();
+
+    // إرسال $centers إلى الـ View
+    return view('admin.events.index', [
+        'events'  => $activities,
+        'centers' => $centers,
+    ]);
+}
+    // عرض صفحة إضافة فعالية (للـ Web)
+    public function create()
+    {
+        $centers  = CulturalCenter::all();
+        $halls    = Hall::all();
+        $theaters = Theater::all();
+
+        return view('admin.events.create', compact('centers', 'halls', 'theaters'));
+    }
+
+    // إضافة فعالية جديدة
     public function add(Request $request)
     {
         $request->validate([
@@ -42,11 +61,14 @@ class ActivityController extends Controller
             'capacity'           => 'nullable|integer|min:1',
             'hall_id'            => 'nullable|exists:halls,id',
             'theater_id'         => 'nullable|exists:theaters,id',
-            'image'             => 'nullable|image|max:2048',
+            'image'              => 'nullable|image|max:2048',
         ]);
 
         if ($this->hasConflict($request->start_time, $request->end_time, $request->hall_id, $request->theater_id)) {
-            return response()->json(['message' => 'يوجد فعالية في نفس المكان والوقت'], 422);
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'يوجد فعالية في نفس المكان والوقت'], 422);
+            }
+            return back()->withInput()->withErrors(['start_time' => 'يوجد تعارض مع فعالية أخرى في نفس المكان والوقت']);
         }
 
         $data = $request->only([
@@ -60,9 +82,37 @@ class ActivityController extends Controller
 
         $activity = Activity::create($data);
 
-        return response()->json(['data' => new ActivityResource($activity)], 201);
+        if ($request->wantsJson()) {
+            return response()->json(['data' => new ActivityResource($activity)], 201);
+        }
+
+        return redirect()->route('admin.events.index')->with('success', 'تمت إضافة الفعالية بنجاح');
     }
 
+    // عرض التفاصيل (للـ Web)
+    public function show(Request $request, $id)
+    {
+        $activity = Activity::with(['culturalCenter', 'hall', 'theater'])->findOrFail($id);
+
+        if ($request->wantsJson()) {
+            return new ActivityResource($activity);
+        }
+
+        return view('admin.events.show', compact('activity'));
+    }
+
+    // عرض صفحة التعديل (للـ Web)
+    public function editView($id)
+    {
+        $activity = Activity::findOrFail($id);
+        $centers  = CulturalCenter::all();
+        $halls    = Hall::all();
+        $theaters = Theater::all();
+
+        return view('admin.events.edit', compact('activity', 'centers', 'halls', 'theaters'));
+    }
+
+    // تعديل الفعالية
     public function edit(Request $request, $id)
     {
         $activity = Activity::findOrFail($id);
@@ -75,19 +125,22 @@ class ActivityController extends Controller
             'start_time'  => 'sometimes|required|date',
             'end_time'    => 'sometimes|required|date|after:start_time',
             'capacity'    => 'nullable|integer|min:1',
-            'image'      => 'nullable|image|max:2048',
+            'image'       => 'nullable|image|max:2048',
         ]);
 
         $startTime = $request->start_time ?? $activity->start_time;
-        $endTime = $request->end_time ?? $activity->end_time;
-        $hallId = $request->hall_id ?? $activity->hall_id;
+        $endTime   = $request->end_time ?? $activity->end_time;
+        $hallId    = $request->hall_id ?? $activity->hall_id;
         $theaterId = $request->theater_id ?? $activity->theater_id;
 
         if ($this->hasConflict($startTime, $endTime, $hallId, $theaterId, $activity->id)) {
-            return response()->json(['message' => 'يوجد فعالية في نفس المكان والوقت'], 422);
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'يوجد فعالية في نفس المكان والوقت'], 422);
+            }
+            return back()->withInput()->withErrors(['start_time' => 'يوجد تعارض مع فعالية أخرى في نفس المكان والوقت']);
         }
 
-        $data = $request->except(['image', '_method']);
+        $data = $request->except(['image', '_method', '_token']);
 
         if ($request->hasFile('image')) {
             if ($activity->image) {
@@ -98,10 +151,15 @@ class ActivityController extends Controller
 
         $activity->update($data);
 
-        return response()->json(['data' => new ActivityResource($activity)], 200);
+        if ($request->wantsJson()) {
+            return response()->json(['data' => new ActivityResource($activity)], 200);
+        }
+
+        return redirect()->route('admin.events.index')->with('success', 'تم تعديل بيانات الفعالية بنجاح');
     }
 
-    public function remove($id)
+    // حذف فعالية
+    public function remove(Request $request, $id)
     {
         $activity = Activity::findOrFail($id);
 
@@ -111,20 +169,22 @@ class ActivityController extends Controller
 
         $activity->delete();
 
-        return response()->json(['success' => true], 200);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true], 200);
+        }
+
+        return redirect()->route('admin.events.index')->with('success', 'تم حذف الفعالية بنجاح');
     }
 
     public function finished()
     {
         $activities = Activity::where('end_time', '<', now())->latest('end_time')->get();
-
         return ActivityResource::collection($activities);
     }
 
     public function coming()
     {
         $activities = Activity::where('start_time', '>', now())->orderBy('start_time', 'asc')->get();
-
         return ActivityResource::collection($activities);
     }
 

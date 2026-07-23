@@ -151,12 +151,33 @@ class AdminAuthController extends Controller
         return response()->json(['message' => 'تم حذف الأدمن بنجاح'], 200);
     }
 
-    public function logout(Request $request)
-    {
+public function logout(Request $request)
+{
+    // 1. إذا كان المستخدم مسجلاً عبر Sanctum API Token
+    if ($request->user() && $request->user()->currentAccessToken()) {
         $request->user()->currentAccessToken()->delete();
+    }
 
+    // 2. إذا كان الحساب مسجلاً عبر Web Session (Admin Guard)
+    if (Auth::guard('admin')->check()) {
+        Auth::guard('admin')->logout();
+    } else {
+        Auth::logout();
+    }
+
+    // إلغاء الجلسة وإعادة توليد توكن CSRF للـ Web
+    if ($request->hasSession()) {
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+
+    // 3. تحديد نوع الاستجابة (JSON للـ API أو Redirect للـ Blade)
+    if ($request->wantsJson()) {
         return response()->json(['message' => 'تم تسجيل الخروج بنجاح']);
     }
+
+    return redirect()->route('admin.login')->with('success', 'تم تسجيل الخروج بنجاح');
+}
 
     private function formatAdmin(Admin $admin): array
     {

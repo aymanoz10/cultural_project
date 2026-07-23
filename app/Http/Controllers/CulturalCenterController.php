@@ -14,13 +14,36 @@ class CulturalCenterController extends Controller
     {
         $query = CulturalCenter::with('photos');
 
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->filled('search')) {
             $searchTerm = $request->search;
-            $query->where('name', 'like', "%{$searchTerm}%")
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
                   ->orWhere('location', 'like', "%{$searchTerm}%");
+            });
         }
 
-        return CulturalCenterResource::collection($query->latest()->get());
+        $centers = $query->latest()->get();
+
+        if ($request->wantsJson()) {
+            return CulturalCenterResource::collection($centers);
+        }
+
+        return view('admin.cultural_centers.index', compact('centers'));
+    }
+
+   public function create()
+    {
+        // جلب جميع المراكز الثقافية من قاعدة البيانات
+        $culturalCenters = CulturalCenter::all(); 
+
+        // تمرير المتغير إلى واجهة Blade
+        return view('admin.halls.create', compact('culturalCenters'));
+    }
+
+    public function editView($id)
+    {
+        $center = CulturalCenter::findOrFail($id);
+        return view('admin.cultural_centers.edit', compact('center'));
     }
 
     public function add(Request $request)
@@ -33,11 +56,15 @@ class CulturalCenterController extends Controller
 
         $center = CulturalCenter::create($request->only(['name', 'location', 'description']));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم إضافة المركز بنجاح',
-            'data'    => new CulturalCenterResource($center),
-        ], 201);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'تم إضافة المركز بنجاح',
+                'data'    => new CulturalCenterResource($center),
+            ], 201);
+        }
+
+        return redirect()->route('admin.cultural_centers.index')->with('success', 'تم إضافة المركز بنجاح');
     }
 
     public function edit(Request $request, $id)
@@ -52,14 +79,18 @@ class CulturalCenterController extends Controller
 
         $center->update($request->only(['name', 'location', 'description']));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تحديث المركز بنجاح',
-            'data'    => new CulturalCenterResource($center->fresh()->load('photos')),
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تحديث المركز بنجاح',
+                'data'    => new CulturalCenterResource($center->fresh()->load('photos')),
+            ]);
+        }
+
+        return redirect()->route('admin.cultural_centers.index')->with('success', 'تم تحديث المركز بنجاح');
     }
 
-    public function remove($id)
+    public function remove($id, Request $request)
     {
         $center = CulturalCenter::findOrFail($id);
 
@@ -69,10 +100,14 @@ class CulturalCenterController extends Controller
 
         $center->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم حذف المركز بنجاح',
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حذف المركز بنجاح',
+            ]);
+        }
+
+        return redirect()->route('admin.cultural_centers.index')->with('success', 'تم حذف المركز بنجاح');
     }
 
     public function addPhotos(Request $request, $id)

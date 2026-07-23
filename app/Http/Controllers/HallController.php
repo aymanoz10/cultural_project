@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Hall;
 use App\Http\Resources\HallResource;
+use App\Models\CulturalCenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,18 +14,30 @@ class HallController extends Controller
     {
         $query = Hall::query();
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', "%{$request->search}%");
         }
 
-        if ($request->has('center_id')) {
+        if ($request->filled('center_id')) {
             $query->where('cultural_center_id', $request->center_id);
         }
 
-        return HallResource::collection($query->get());
+        $halls = $query->get();
+
+        if ($request->wantsJson()) {
+            return HallResource::collection($halls);
+        }
+
+        return view('admin.halls.index', compact('halls'));
     }
 
-    public function add(Request $request)
+   public function create()
+{
+    $culturalCenters = CulturalCenter::select('id', 'name')->get();
+    return view('admin.halls.create', compact('culturalCenters'));
+}
+
+    public function store(Request $request)
     {
         $request->validate([
             'cultural_center_id' => 'required|exists:cultural_centers,id',
@@ -32,7 +45,7 @@ class HallController extends Controller
             'capacity'           => 'required|integer|min:1',
             'features'           => 'nullable|array',
             'features.*'         => 'string',
-            'image'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image'              => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $data = $request->only(['cultural_center_id', 'name', 'capacity', 'features']);
@@ -43,10 +56,21 @@ class HallController extends Controller
 
         $hall = Hall::create($data);
 
-        return response()->json(['success' => true, 'data' => new HallResource($hall)], 201);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => new HallResource($hall)], 201);
+        }
+
+        return redirect()->route('admin.halls.index')->with('success', 'تم إضافة القاعة بنجاح');
     }
 
-    public function edit(Request $request, $id)
+    public function editView($id)
+     {
+    $hall = Hall::findOrFail($id); // أو $theater = Theater::findOrFail($id);
+    $culturalCenters = CulturalCenter::all();
+    return view('admin.halls.edit', compact('hall', 'culturalCenters')); // أو admin.theaters.edit
+     }
+
+    public function update(Request $request, $id)
     {
         $hall = Hall::findOrFail($id);
 
@@ -55,7 +79,7 @@ class HallController extends Controller
             'capacity'   => 'sometimes|required|integer|min:1',
             'features'   => 'nullable|array',
             'features.*' => 'string',
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $data = $request->only(['name', 'capacity', 'features']);
@@ -69,10 +93,14 @@ class HallController extends Controller
 
         $hall->update($data);
 
-        return response()->json(['success' => true, 'data' => new HallResource($hall)], 200);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => new HallResource($hall)], 200);
+        }
+
+        return redirect()->route('admin.halls.index')->with('success', 'تم تحديث القاعة بنجاح');
     }
 
-    public function remove($id)
+    public function destroy($id, Request $request)
     {
         $hall = Hall::findOrFail($id);
 
@@ -82,6 +110,11 @@ class HallController extends Controller
 
         $hall->delete();
 
-        return response()->json(['success' => true], 200);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true], 200);
+        }
+
+        return redirect()->route('admin.halls.index')->with('success', 'تم حذف القاعة بنجاح');
     }
+    
 }
