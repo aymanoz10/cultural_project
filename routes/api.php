@@ -110,6 +110,7 @@ Route::middleware('auth:admin')->prefix('admin')->group(function () {
 // ═══════════════════════════════════════
 Route::prefix('centers')->group(function () {
     Route::get('/', [CulturalCenterController::class, 'index']);
+    Route::get('/{id}', [CulturalCenterController::class, 'show']);
 
     Route::middleware('auth:admin')->group(function () {
         Route::post('/', [CulturalCenterController::class, 'add']);
@@ -124,9 +125,9 @@ Route::prefix('theaters')->group(function () {
     Route::get('/', [TheaterController::class, 'index']);
 
     Route::middleware('auth:admin')->group(function () {
-        Route::post('/', [TheaterController::class, 'add']);
-        Route::post('/{id}', [TheaterController::class, 'edit']);
-        Route::delete('/{id}', [TheaterController::class, 'remove']);
+        Route::post('/', [TheaterController::class, 'store']);
+        Route::post('/{id}', [TheaterController::class, 'update']);
+        Route::delete('/{id}', [TheaterController::class, 'destroy']);
     });
 });
 
@@ -134,9 +135,9 @@ Route::prefix('halls')->group(function () {
     Route::get('/', [HallController::class, 'index']);
 
     Route::middleware('auth:admin')->group(function () {
-        Route::post('/', [HallController::class, 'add']);
-        Route::post('/{id}', [HallController::class, 'edit']);
-        Route::delete('/{id}', [HallController::class, 'remove']);
+        Route::post('/', [HallController::class, 'store']);
+        Route::post('/{id}', [HallController::class, 'update']);
+        Route::delete('/{id}', [HallController::class, 'destroy']);
     });
 });
 

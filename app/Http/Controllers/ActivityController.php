@@ -27,9 +27,12 @@ class ActivityController extends Controller
     }
 
     $activities = $query->latest('start_time')->paginate(10);
-    
-    // جلب المراكز لفلترة القائمة
-    $centers = \App\Models\CulturalCenter::all();
+
+    if ($request->wantsJson()) {
+        return ActivityResource::collection($activities);
+    }
+
+    $centers = CulturalCenter::all();
 
     // إرسال $centers إلى الـ View
     return view('admin.events.index', [

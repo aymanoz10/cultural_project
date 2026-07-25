@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\CulturalCenterResource;
+use App\Http\Resources\CulturalCenterPhotoResource;
+use App\Http\Resources\HallResource;
+use App\Http\Resources\TheaterResource;
 use App\Models\CulturalCenter;
 use App\Models\CulturalCenterPhoto;
 use Illuminate\Http\Request;
@@ -29,6 +32,25 @@ class CulturalCenterController extends Controller
         }
 
         return view('admin.cultural_centers.index', compact('centers'));
+    }
+
+    public function show($id)
+    {
+        $center = CulturalCenter::with(['photos', 'halls', 'theaters'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'id'          => $center->id,
+                'name'        => $center->name,
+                'location'    => $center->location,
+                'description' => $center->description,
+                'photos'      => CulturalCenterPhotoResource::collection($center->photos),
+                'halls'       => HallResource::collection($center->halls),
+                'theaters'    => TheaterResource::collection($center->theaters),
+                'created_at'  => $center->created_at?->format('Y-m-d H:i:s'),
+            ],
+        ]);
     }
 
    public function create()
