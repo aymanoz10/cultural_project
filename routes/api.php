@@ -116,6 +116,7 @@ Route::prefix('centers')->group(function () {
 
 Route::prefix('venues')->group(function () {
     Route::get('/', [VenueController::class, 'index']);
+    Route::get('/{id}', [VenueController::class, 'show']);
 
     Route::middleware('auth:admin')->group(function () {
         Route::post('/', [VenueController::class, 'store']);

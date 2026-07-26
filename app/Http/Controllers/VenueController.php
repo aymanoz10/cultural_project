@@ -29,6 +29,16 @@ class VenueController extends Controller
         return VenueResource::collection($query->latest()->get());
     }
 
+    public function show($id)
+    {
+        $venue = Venue::with('culturalCenter')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data'    => new VenueResource($venue),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
