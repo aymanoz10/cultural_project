@@ -72,9 +72,11 @@ class CulturalCenterController extends Controller
             'name'        => 'required|string|max:255',
             'location'    => 'required|string|max:255',
             'description' => 'nullable|string',
+            'features'    => 'nullable|array',
+            'features.*'  => 'string',
         ]);
 
-        $center = CulturalCenter::create($request->only(['name', 'location', 'description']));
+        $center = CulturalCenter::create($request->only(['name', 'location', 'description', 'features']));
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -95,9 +97,11 @@ class CulturalCenterController extends Controller
             'name'        => 'sometimes|required|string|max:255',
             'location'    => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
+            'features'    => 'nullable|array',
+            'features.*'  => 'string',
         ]);
 
-        $center->update($request->only(['name', 'location', 'description']));
+        $center->update($request->only(['name', 'location', 'description', 'features']));
 
         if ($request->wantsJson()) {
             return response()->json([

@@ -10,7 +10,11 @@ class CulturalCenter extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'location', 'description'];
+    protected $fillable = ['name', 'location', 'description', 'features'];
+
+    protected $casts = [
+        'features' => 'array',
+    ];
 
     public function photos(): HasMany
     {

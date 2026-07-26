@@ -14,6 +14,7 @@ class CulturalCenterResource extends JsonResource
             'name'        => $this->name,
             'location'    => $this->location,
             'description' => $this->description,
+            'features'    => $this->features,
             'photos'      => CulturalCenterPhotoResource::collection($this->whenLoaded('photos')),
             'created_at'  => $this->created_at?->format('Y-m-d H:i:s'),
         ];
