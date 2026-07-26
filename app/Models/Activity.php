@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Activity extends Model
 {
     use HasFactory;
+
     public const TYPES = [
         'workshop',
         'lecture',
@@ -19,8 +20,7 @@ class Activity extends Model
     protected $fillable = [
         'cultural_center_id',
         'type',
-        'hall_id',
-        'theater_id',
+        'venue_id',
         'title',
         'host_name',
         'description',
@@ -40,14 +40,9 @@ class Activity extends Model
         return $this->belongsTo(CulturalCenter::class);
     }
 
-    public function hall()
+    public function venue()
     {
-        return $this->belongsTo(Hall::class);
-    }
-
-    public function theater()
-    {
-        return $this->belongsTo(Theater::class);
+        return $this->belongsTo(Venue::class);
     }
 
     public function reservations()
@@ -58,11 +53,6 @@ class Activity extends Model
     public function ratings()
     {
         return $this->morphMany(Rating::class, 'rateable');
-    }
-
-    public function ads()
-    {
-        return $this->morphMany(Ad::class, 'advertable');
     }
 
     public function getAverageRatingAttribute()

@@ -13,8 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->string('ticket_id')->unique();
             $table->text('qr_code')->nullable();
-            $table->foreignId('hall_id')->nullable()->constrained();
-            $table->foreignId('theater_id')->nullable()->constrained();
+            $table->foreignId('venue_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('activity_id')->constrained();
             $table->foreignId('library_id')->nullable()->constrained();
             $table->date('reservation_date');

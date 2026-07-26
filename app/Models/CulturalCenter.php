@@ -17,19 +17,9 @@ class CulturalCenter extends Model
         return $this->hasMany(CulturalCenterPhoto::class);
     }
 
-    public function theaters(): HasMany
+    public function venues(): HasMany
     {
-        return $this->hasMany(Theater::class);
-    }
-
-    public function halls(): HasMany
-    {
-        return $this->hasMany(Hall::class);
-    }
-
-    public function libraries(): HasMany
-    {
-        return $this->hasMany(Library::class);
+        return $this->hasMany(Venue::class);
     }
 
     public function activities(): HasMany

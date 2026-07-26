@@ -17,12 +17,10 @@ class ReservationResource extends JsonResource
             'reservation_date' => $this->reservation_date?->format('Y-m-d'),
             'user_id'          => $this->user_id,
             'activity_id'      => $this->activity_id,
-            'hall_id'          => $this->hall_id,
-            'theater_id'       => $this->theater_id,
+            'venue_id'         => $this->venue_id,
             'library_id'       => $this->library_id,
             'activity'         => $this->whenLoaded('activity', fn () => new ActivityResource($this->activity)),
-            'hall'             => $this->whenLoaded('hall', fn () => new HallResource($this->hall)),
-            'theater'          => $this->whenLoaded('theater', fn () => new TheaterResource($this->theater)),
+            'venue'            => $this->whenLoaded('venue', fn () => new VenueResource($this->venue)),
         ];
     }
 }
