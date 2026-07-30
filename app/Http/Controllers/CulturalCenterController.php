@@ -43,6 +43,7 @@ class CulturalCenterController extends Controller
                 'id'          => $center->id,
                 'name'        => $center->name,
                 'location'    => $center->location,
+                'map_location'=> $center->map_location,
                 'description' => $center->description,
                 'photos'      => CulturalCenterPhotoResource::collection($center->photos),
                 'venues'      => VenueResource::collection($center->venues),
@@ -71,12 +72,13 @@ class CulturalCenterController extends Controller
         $request->validate([
             'name'        => 'required|string|max:255',
             'location'    => 'required|string|max:255',
+            'map_location'=> 'nullable|string',
             'description' => 'nullable|string',
             'features'    => 'nullable|array',
             'features.*'  => 'string',
         ]);
 
-        $center = CulturalCenter::create($request->only(['name', 'location', 'description', 'features']));
+        $center = CulturalCenter::create($request->only(['name', 'location', 'map_location', 'description', 'features']));
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -96,12 +98,13 @@ class CulturalCenterController extends Controller
         $request->validate([
             'name'        => 'sometimes|required|string|max:255',
             'location'    => 'sometimes|required|string|max:255',
+            'map_location'=> 'nullable|string',
             'description' => 'nullable|string',
             'features'    => 'nullable|array',
             'features.*'  => 'string',
         ]);
 
-        $center->update($request->only(['name', 'location', 'description', 'features']));
+        $center->update($request->only(['name', 'location', 'map_location', 'description', 'features']));
 
         if ($request->wantsJson()) {
             return response()->json([

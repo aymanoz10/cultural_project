@@ -10,7 +10,7 @@ class CulturalCenter extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'location', 'description', 'features'];
+    protected $fillable = ['name', 'location', 'map_location', 'description', 'features'];
 
     protected $casts = [
         'features' => 'array',

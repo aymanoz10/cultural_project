@@ -13,6 +13,7 @@ class CulturalCenterResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'location'    => $this->location,
+            'map_location'=> $this->map_location,
             'description' => $this->description,
             'features'    => $this->features,
             'photos'      => CulturalCenterPhotoResource::collection($this->whenLoaded('photos')),
