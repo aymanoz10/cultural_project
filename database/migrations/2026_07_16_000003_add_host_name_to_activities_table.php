@@ -8,15 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('activities', function (Blueprint $table) {
-            $table->string('host_name')->nullable()->after('title');
-        });
+        // moved to main migration
     }
 
     public function down(): void
     {
-        Schema::table('activities', function (Blueprint $table) {
-            $table->dropColumn('host_name');
-        });
     }
 };

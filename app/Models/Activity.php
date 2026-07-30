@@ -22,17 +22,20 @@ class Activity extends Model
         'type',
         'venue_id',
         'title',
-        'host_name',
+        'presenter_name',
+        'presenter_avatar',
         'description',
+        'ticket_price',
+        'capacity',
         'start_time',
         'end_time',
-        'capacity',
         'image',
     ];
 
     protected $casts = [
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
+        'start_time'   => 'datetime',
+        'end_time'     => 'datetime',
+        'ticket_price' => 'decimal:2',
     ];
 
     public function culturalCenter()
@@ -55,11 +58,6 @@ class Activity extends Model
         return $this->morphMany(Rating::class, 'rateable');
     }
 
-    public function getAverageRatingAttribute()
-    {
-        return $this->ratings()->avg('value') ?? 0;
-    }
-
     public function confirmedReservationsCount(): int
     {
         return $this->reservations()->where('status', 'confirmed')->count();
@@ -73,4 +71,11 @@ class Activity extends Model
 
         return $this->confirmedReservationsCount() < $this->capacity;
     }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('value') ?? 0;
+    }
+
+
 }

@@ -14,10 +14,13 @@ return new class extends Migration
             $table->string('type')->default('workshop');
             $table->foreignId('venue_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
+            $table->string('presenter_name')->nullable();
+            $table->string('presenter_avatar')->nullable();
             $table->text('description');
+            $table->decimal('ticket_price', 10, 2)->nullable();
+            $table->integer('capacity')->nullable();
             $table->dateTime('start_time');
             $table->dateTime('end_time');
-            $table->integer('capacity')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
         });

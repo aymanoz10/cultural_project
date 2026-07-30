@@ -17,17 +17,31 @@ class ActivityController extends Controller
         $query = Activity::with(['culturalCenter', 'venue']);
 
         if ($request->filled('search')) {
-            $query->where('title', 'like', "%{$request->search}%");
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('presenter_name', 'like', "%{$request->search}%");
+            });
         }
 
         if ($request->filled('center_id')) {
             $query->where('cultural_center_id', $request->center_id);
         }
 
-        $activities = $query->latest('start_time')->paginate(10);
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('id')) {
+            $query->where('id', $request->id);
+        }
+
+        $activities = $query->latest('start_time')->get();
 
         if ($request->wantsJson()) {
-            return ActivityResource::collection($activities);
+            return response()->json([
+                'data' => ActivityResource::collection($activities),
+            ]);
         }
 
         $centers = CulturalCenter::all();
@@ -52,11 +66,13 @@ class ActivityController extends Controller
             'cultural_center_id' => 'required|exists:cultural_centers,id',
             'type'               => ['required', Rule::in(Activity::TYPES)],
             'title'              => 'required|string',
-            'host_name'          => 'nullable|string|max:255',
+            'presenter_name'     => 'nullable|string|max:255',
+            'presenter_avatar'   => 'nullable|image|max:2048',
             'description'        => 'nullable|string',
+            'ticket_price'       => 'nullable|numeric|min:0',
+            'capacity'           => 'nullable|integer|min:1',
             'start_time'         => 'required|date',
             'end_time'           => 'required|date|after:start_time',
-            'capacity'           => 'nullable|integer|min:1',
             'venue_id'           => 'nullable|exists:venues,id',
             'image'              => 'nullable|image|max:2048',
         ]);
@@ -70,11 +86,15 @@ class ActivityController extends Controller
 
         $data = $request->only([
             'cultural_center_id', 'type', 'venue_id',
-            'title', 'host_name', 'description', 'start_time', 'end_time', 'capacity',
+            'title', 'presenter_name', 'description', 'ticket_price', 'capacity', 'start_time', 'end_time',
         ]);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('activities', 'public');
+        }
+
+        if ($request->hasFile('presenter_avatar')) {
+            $data['presenter_avatar'] = $request->file('presenter_avatar')->store('activities/presenters', 'public');
         }
 
         $activity = Activity::create($data);
@@ -111,15 +131,17 @@ class ActivityController extends Controller
         $activity = Activity::findOrFail($id);
 
         $request->validate([
-            'type'        => ['sometimes', 'required', Rule::in(Activity::TYPES)],
-            'title'       => 'sometimes|required|string',
-            'host_name'   => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'start_time'  => 'sometimes|required|date',
-            'end_time'    => 'sometimes|required|date|after:start_time',
-            'capacity'    => 'nullable|integer|min:1',
-            'venue_id'    => 'nullable|exists:venues,id',
-            'image'       => 'nullable|image|max:2048',
+            'type'             => ['sometimes', 'required', Rule::in(Activity::TYPES)],
+            'title'            => 'sometimes|required|string',
+            'presenter_name'   => 'nullable|string|max:255',
+            'presenter_avatar' => 'nullable|image|max:2048',
+            'description'      => 'nullable|string',
+            'ticket_price'     => 'nullable|numeric|min:0',
+            'capacity'         => 'nullable|integer|min:1',
+            'start_time'       => 'sometimes|required|date',
+            'end_time'         => 'sometimes|required|date|after:start_time',
+            'venue_id'         => 'nullable|exists:venues,id',
+            'image'            => 'nullable|image|max:2048',
         ]);
 
         $startTime = $request->start_time ?? $activity->start_time;
@@ -133,13 +155,20 @@ class ActivityController extends Controller
             return back()->withInput()->withErrors(['start_time' => 'يوجد تعارض مع فعالية أخرى في نفس المكان والوقت']);
         }
 
-        $data = $request->except(['image', '_method', '_token']);
+        $data = $request->except(['image', 'presenter_avatar', '_method', '_token']);
 
         if ($request->hasFile('image')) {
             if ($activity->image) {
                 Storage::disk('public')->delete($activity->image);
             }
             $data['image'] = $request->file('image')->store('activities', 'public');
+        }
+
+        if ($request->hasFile('presenter_avatar')) {
+            if ($activity->presenter_avatar) {
+                Storage::disk('public')->delete($activity->presenter_avatar);
+            }
+            $data['presenter_avatar'] = $request->file('presenter_avatar')->store('activities/presenters', 'public');
         }
 
         $activity->update($data);
@@ -157,6 +186,10 @@ class ActivityController extends Controller
 
         if ($activity->image) {
             Storage::disk('public')->delete($activity->image);
+        }
+
+        if ($activity->presenter_avatar) {
+            Storage::disk('public')->delete($activity->presenter_avatar);
         }
 
         $activity->delete();
