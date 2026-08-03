@@ -8,13 +8,12 @@ use App\Models\Venue;
 use App\Http\Resources\ActivityResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 class ActivityController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Activity::with(['culturalCenter', 'venue']);
+        $query = Activity::with(['culturalCenter', 'venue', 'activityType']);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -28,20 +27,19 @@ class ActivityController extends Controller
             $query->where('cultural_center_id', $request->center_id);
         }
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+        if ($request->filled('activity_type_id')) {
+            $query->where('activity_type_id', $request->activity_type_id);
         }
 
         if ($request->filled('id')) {
             $query->where('id', $request->id);
         }
 
-        $activities = $query->latest('start_time')->get();
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+        $activities = $query->latest('start_time')->paginate($perPage);
 
         if ($request->wantsJson()) {
-            return response()->json([
-                'data' => ActivityResource::collection($activities),
-            ]);
+            return ActivityResource::collection($activities);
         }
 
         $centers = CulturalCenter::all();
@@ -54,17 +52,18 @@ class ActivityController extends Controller
 
     public function create()
     {
-        $centers = CulturalCenter::all();
-        $venues  = Venue::all();
+        $centers       = CulturalCenter::all();
+        $venues        = Venue::all();
+        $activityTypes = ActivityType::all();
 
-        return view('admin.events.create', compact('centers', 'venues'));
+        return view('admin.events.create', compact('centers', 'venues', 'activityTypes'));
     }
 
     public function add(Request $request)
     {
         $request->validate([
             'cultural_center_id' => 'required|exists:cultural_centers,id',
-            'type'               => ['required', Rule::in(Activity::TYPES)],
+            'activity_type_id'   => 'required|exists:activity_types,id',
             'title'              => 'required|string',
             'presenter_name'     => 'nullable|string|max:255',
             'presenter_avatar'   => 'nullable|image|max:2048',
@@ -85,7 +84,7 @@ class ActivityController extends Controller
         }
 
         $data = $request->only([
-            'cultural_center_id', 'type', 'venue_id',
+            'cultural_center_id', 'activity_type_id', 'venue_id',
             'title', 'presenter_name', 'description', 'ticket_price', 'capacity', 'start_time', 'end_time',
         ]);
 
@@ -108,7 +107,7 @@ class ActivityController extends Controller
 
     public function show(Request $request, $id)
     {
-        $activity = Activity::with(['culturalCenter', 'venue'])->findOrFail($id);
+        $activity = Activity::with(['culturalCenter', 'venue', 'activityType'])->findOrFail($id);
 
         if ($request->wantsJson()) {
             return new ActivityResource($activity);
@@ -119,11 +118,12 @@ class ActivityController extends Controller
 
     public function editView($id)
     {
-        $activity = Activity::findOrFail($id);
-        $centers  = CulturalCenter::all();
-        $venues   = Venue::all();
+        $activity     = Activity::findOrFail($id);
+        $centers      = CulturalCenter::all();
+        $venues       = Venue::all();
+        $activityTypes = ActivityType::all();
 
-        return view('admin.events.edit', compact('activity', 'centers', 'venues'));
+        return view('admin.events.edit', compact('activity', 'centers', 'venues', 'activityTypes'));
     }
 
     public function edit(Request $request, $id)
@@ -131,8 +131,8 @@ class ActivityController extends Controller
         $activity = Activity::findOrFail($id);
 
         $request->validate([
-            'type'             => ['sometimes', 'required', Rule::in(Activity::TYPES)],
-            'title'            => 'sometimes|required|string',
+            'activity_type_id'   => ['sometimes', 'required', 'exists:activity_types,id'],
+            'title'              => 'sometimes|required|string',
             'presenter_name'   => 'nullable|string|max:255',
             'presenter_avatar' => 'nullable|image|max:2048',
             'description'      => 'nullable|string',
@@ -201,15 +201,23 @@ class ActivityController extends Controller
         return redirect()->route('admin.events.index')->with('success', 'تم حذف الفعالية بنجاح');
     }
 
-    public function finished()
+    public function finished(Request $request)
     {
-        $activities = Activity::where('end_time', '<', now())->latest('end_time')->get();
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+        $activities = Activity::where('end_time', '<', now())
+            ->latest('end_time')
+            ->paginate($perPage);
+
         return ActivityResource::collection($activities);
     }
 
-    public function coming()
+    public function coming(Request $request)
     {
-        $activities = Activity::where('start_time', '>', now())->orderBy('start_time', 'asc')->get();
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+        $activities = Activity::where('start_time', '>', now())
+            ->orderBy('start_time', 'asc')
+            ->paginate($perPage);
+
         return ActivityResource::collection($activities);
     }
 

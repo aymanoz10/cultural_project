@@ -4,9 +4,7 @@
 @section('page-title', 'إضافة فعالية جديدة')
 
 @php
-  // الحصول على أنواع الفعاليات المحددة في Model الفعالية
-  $types = \App\Models\Activity::TYPES ?? ['محاضرة', 'ورشة عمل', 'حفل موسيقي', 'معرض', 'عرض مسرحي'];
-
+  $types = $activityTypes ?? collect();
   $centers = $centers ?? collect([
       (object)['id'=>1,'name'=>'مركز أدهم إسماعيل للفنون'],
       (object)['id'=>2,'name'=>'دار الأسد للثقافة والفنون'],
@@ -53,13 +51,13 @@
       <!-- نوع الفعالية (مطلوب في الكنترولر) -->
       <div>
         <label class="text-xs font-bold text-slate-500 mb-1 block">نوع الفعالية <span class="text-rose-500">*</span></label>
-        <select name="type" required>
+        <select name="activity_type_id" required>
           <option value="" disabled selected>اختر النوع</option>
-          @foreach ($types as $type)
-            <option value="{{ $type }}" @selected(old('type') == $type)>{{ $type }}</option>
+          @foreach ($activityTypes as $type)
+            <option value="{{ $type->id }}" @selected(old('activity_type_id') == $type->id)>{{ $type->title }}</option>
           @endforeach
         </select>
-        @error('type') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
+        @error('activity_type_id') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
       </div>
     </div>
 

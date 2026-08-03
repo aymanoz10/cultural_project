@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cultural_center_id')->constrained()->onDelete('cascade');
-            $table->string('type')->default('workshop');
+            $table->foreignId('activity_type_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('venue_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->string('presenter_name')->nullable();

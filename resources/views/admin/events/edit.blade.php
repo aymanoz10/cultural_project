@@ -4,7 +4,7 @@
 @section('page-title', 'تعديل الفعالية')
 
 @php
-  $types = \App\Models\Activity::TYPES ?? ['محاضرة', 'ورشة عمل', 'حفل موسيقي', 'معرض', 'عرض مسرحي'];
+  $activityTypes = $activityTypes ?? collect();
   $centers = $centers ?? collect([
       (object)['id' => 1, 'name' => 'مركز أدهم إسماعيل للفنون'],
       (object)['id' => 2, 'name' => 'دار الأسد للثقافة والفنون'],
@@ -54,15 +54,15 @@
         <!-- نوع الفعالية -->
         <div>
           <label class="text-xs font-bold text-slate-700 mb-1 block">نوع الفعالية <span class="text-rose-500">*</span></label>
-          <select name="type" required class="form-input bg-white">
+          <select name="activity_type_id" required class="form-input bg-white">
             <option value="" disabled>اختر نوع الفعالية</option>
-            @foreach ($types as $type)
-              <option value="{{ $type }}" @selected(old('type', $activity->type ?? $event->type) == $type)>
-                {{ $type }}
+            @foreach ($activityTypes as $type)
+              <option value="{{ $type->id }}" @selected(old('activity_type_id', $activity->activity_type_id ?? $event->activity_type_id) == $type->id)>
+                {{ $type->title }}
               </option>
             @endforeach
           </select>
-          @error('type') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
+          @error('activity_type_id') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
         </div>
       </div>
 

@@ -9,17 +9,9 @@ class Activity extends Model
 {
     use HasFactory;
 
-    public const TYPES = [
-        'workshop',
-        'lecture',
-        'show',
-        'exhibition',
-        'festival',
-    ];
-
     protected $fillable = [
         'cultural_center_id',
-        'type',
+        'activity_type_id',
         'venue_id',
         'title',
         'presenter_name',
@@ -41,6 +33,11 @@ class Activity extends Model
     public function culturalCenter()
     {
         return $this->belongsTo(CulturalCenter::class);
+    }
+
+    public function activityType()
+    {
+        return $this->belongsTo(ActivityType::class);
     }
 
     public function venue()

@@ -9,6 +9,7 @@ use App\Http\Controllers\{
     VenueReservationController,
     LibraryController,
     ActivityController,
+    ActivityTypeController,
     ReservationController,
     RatingController,
     SuggestionController,
@@ -132,6 +133,16 @@ Route::prefix('libraries')->group(function () {
         Route::post('/', [LibraryController::class, 'add']);
         Route::post('/{id}', [LibraryController::class, 'edit']);
         Route::delete('/{id}', [LibraryController::class, 'remove']);
+    });
+});
+
+Route::prefix('activity-types')->group(function () {
+    Route::get('/', [ActivityTypeController::class, 'index']);
+
+    Route::middleware('auth:admin')->group(function () {
+        Route::post('/', [ActivityTypeController::class, 'store']);
+        Route::post('/{id}', [ActivityTypeController::class, 'update']);
+        Route::delete('/{id}', [ActivityTypeController::class, 'destroy']);
     });
 });
 

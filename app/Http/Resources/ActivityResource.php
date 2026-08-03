@@ -12,7 +12,8 @@ class ActivityResource extends JsonResource
         return [
             'id'                 => $this->id,
             'cultural_center_id' => $this->cultural_center_id,
-            'type'               => $this->type,
+            'activity_type_id'   => $this->activity_type_id,
+            'activity_type'      => $this->whenLoaded('activityType', fn () => new ActivityTypeResource($this->activityType)),
             'venue_id'           => $this->venue_id,
             'title'              => $this->title,
             'presenter_name'     => $this->presenter_name,
