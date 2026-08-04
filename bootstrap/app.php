@@ -14,7 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'admin.role' => \App\Http\Middleware\CheckAdminRole::class, // (استبدل AdminRoleMiddleware باسم الكلاس لديك إن كان مختلفاً)
+            'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
+        ]);
+
+        // توحيد استجابات الـAPI كـ JSON (تُصبح أخطاء التحقق 422 بصيغة JSON بدل صفحات HTML)
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceJsonResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

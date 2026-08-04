@@ -8,6 +8,7 @@ use App\Models\Admin;
 use App\Models\CulturalCenter;
 use App\Models\User;
 use App\Models\Venue;
+use App\Models\VenueType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -17,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->seedUsers();
         $this->seedActivityTypes();
+        $this->seedVenueTypes();
         $this->seedCenters();
         $this->seedVenues();
         $this->seedActivities();
@@ -36,9 +38,9 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['phone' => '01111111111'],
             [
-                'name'         => 'Test User',
-                'date_of_birth'=> '1998-05-15',
-                'gender'       => 'male',
+                'name'          => 'Test User',
+                'date_of_birth' => '1998-05-15',
+                'gender'        => 'male',
             ]
         );
     }
@@ -55,6 +57,20 @@ class DatabaseSeeder extends Seeder
 
         foreach ($types as $type) {
             ActivityType::firstOrCreate(['title' => $type['title']], $type);
+        }
+    }
+
+    private function seedVenueTypes(): void
+    {
+        $types = [
+            ['name' => 'قاعة محاضرات', 'code' => 'hall'],
+            ['name' => 'مسرح',          'code' => 'theater'],
+            ['name' => 'مكتبة',         'code' => 'library'],
+            ['name' => 'صالة عرض',      'code' => 'gallery'],
+        ];
+
+        foreach ($types as $type) {
+            VenueType::firstOrCreate(['code' => $type['code']], $type);
         }
     }
 
@@ -91,18 +107,25 @@ class DatabaseSeeder extends Seeder
 
     private function seedVenues(): void
     {
-        $centers = CulturalCenter::all();
+        $centers    = CulturalCenter::all();
+        $venueTypes = VenueType::all();
+
+        if ($venueTypes->isEmpty()) {
+            return;
+        }
 
         foreach ($centers as $index => $center) {
             $venueCount = ($index === 0) ? 2 : 1;
 
             for ($i = 1; $i <= $venueCount; $i++) {
+                $venueType = $venueTypes->get(($i - 1) % $venueTypes->count());
+
                 Venue::firstOrCreate(
                     ['cultural_center_id' => $center->id, 'name' => "قاعة {$center->name} - {$i}"],
                     [
-                        'type'     => $i % 2 === 0 ? 'theater' : 'hall',
-                        'capacity' => 50 + ($i * 20),
-                        'features' => ['تكييف', 'صوتيات'],
+                        'venue_type_id' => $venueType->id,
+                        'capacity'      => 50 + ($i * 20),
+                        'features'      => ['تكييف', 'صوتيات'],
                     ]
                 );
             }
@@ -160,7 +183,6 @@ class DatabaseSeeder extends Seeder
             'غادة المصري',
         ];
 
-        // 50 فعالية: أول 15 في الماضي (منتهية)، والباقي في المستقبل (قادمة)
         $total    = 50;
         $finished = 15;
 
@@ -170,12 +192,12 @@ class DatabaseSeeder extends Seeder
             $venue  = $venues->get(($i - 1) % $venues->count());
 
             $offset = $i <= $finished
-                ? -($i * 3)                // الماضي: -3, -6, -9 ... -45 يوم
-                : (($i - $finished) * 2);  // المستقبل: 2, 4, 6 ... 70 يوم
+                ? -($i * 3)
+                : (($i - $finished) * 2);
 
             $baseDate = now()->startOfDay()->addDays($offset)->setHour(10)->setMinute(0);
 
-            $title = $titles[($i - 1) % count($titles)];
+            $title     = $titles[($i - 1) % count($titles)];
             $presenter = $presenters[($i - 1) % count($presenters)];
 
             Activity::firstOrCreate(

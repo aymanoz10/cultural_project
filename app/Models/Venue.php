@@ -5,18 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Venue extends Model
 {
     use HasFactory;
 
-    public const TYPES = ['hall', 'theater'];
-
     protected $fillable = [
         'cultural_center_id',
+        'venue_type_id',
         'name',
-        'type',
         'capacity',
         'features',
         'image',
@@ -26,18 +23,16 @@ class Venue extends Model
         'features' => 'array',
     ];
 
+    /**
+     * العلاقة: القاعة تنتمي إلى نوع معين
+     */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(VenueType::class, 'venue_type_id');
+    }
+
     public function culturalCenter(): BelongsTo
     {
         return $this->belongsTo(CulturalCenter::class);
-    }
-
-    public function activities(): HasMany
-    {
-        return $this->hasMany(Activity::class);
-    }
-
-    public function reservations(): HasMany
-    {
-        return $this->hasMany(Reservation::class);
     }
 }

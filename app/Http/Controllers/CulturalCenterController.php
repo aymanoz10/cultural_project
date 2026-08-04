@@ -33,10 +33,6 @@ class CulturalCenterController extends Controller
         return view('admin.cultural_centers.index', compact('centers'));
     }
 
-  public function create()
-{
-    return view('admin.cultural_centers.create');
-}
     public function show($id)
     {
         $center = CulturalCenter::with(['photos', 'venues'])->findOrFail($id);

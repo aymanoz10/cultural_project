@@ -6,9 +6,13 @@ use App\Events\ReservationCreated;
 use App\Models\Reservation;
 use App\Notifications\ReservationConfirmed;
 use App\Notifications\ReservationWaitListed;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
-class SendReservationCreatedNotification
+class SendReservationCreatedNotification implements ShouldQueue
 {
+    use InteractsWithQueue;
+
     public function handle(ReservationCreated $event): void
     {
         $reservation = $event->reservation->loadMissing('activity', 'user');

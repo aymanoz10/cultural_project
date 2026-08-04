@@ -1,4 +1,4 @@
-    <?php
+<?php
 
     use App\Models\User;
     use App\Models\Admin;
@@ -16,9 +16,17 @@
                 'provider' => 'users',
             ],
 
-            // 🟢 تم تغيير الدرايفر هنا من sanctum إلى session
+            // حارس لوحة التحكم (الويب) — قائم على الجلسة
             'admin' => [
                 'driver' => 'session',
+                'provider' => 'admins',
+            ],
+
+            // 🟢 حارس واجهة الـAPI للأدمن — قائم على توكن Sanctum (للموبايل/الطلبات عديمة الحالة)
+            // لتفعيله بالكامل: اجعل AdminAuthController@login يُصدر توكنًا، ثم غيّر
+            // مسارات الأدمن في routes/api.php من auth:admin إلى auth:admin-api
+            'admin-api' => [
+                'driver' => 'sanctum',
                 'provider' => 'admins',
             ],
         ],

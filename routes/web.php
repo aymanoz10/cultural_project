@@ -3,9 +3,8 @@
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\CulturalCenterController;
-use App\Http\Controllers\HallController;
 use App\Http\Controllers\LibraryController;
-use App\Http\Controllers\TheaterController;
+use App\Http\Controllers\VenueController;
 use Illuminate\Support\Facades\Route;
 
 // --------------------------------------------------------------------------
@@ -70,21 +69,13 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/cultural-centers/{id}/photos', [CulturalCenterController::class, 'addPhotos'])->name('cultural_centers.photos.store');
         Route::delete('/cultural-centers/photos/{id}', [CulturalCenterController::class, 'removePhoto'])->name('cultural_centers.photos.destroy');
 
-        // قسم القاعات
-        Route::get('/halls', [HallController::class, 'index'])->name('halls.index');
-        Route::get('/halls/create', [HallController::class, 'create'])->name('halls.create');
-        Route::post('/halls', [HallController::class, 'store'])->name('halls.store');
-        Route::get('/halls/{id}/edit', [HallController::class, 'editView'])->name('halls.edit');
-        Route::put('/halls/{id}', [HallController::class, 'update'])->name('halls.update');
-        Route::delete('/halls/{id}', [HallController::class, 'destroy'])->name('halls.destroy');
-
-        // قسم المسارح
-        Route::get('/theaters', [TheaterController::class, 'index'])->name('theaters.index');
-        Route::get('/theaters/create', [TheaterController::class, 'create'])->name('theaters.create');
-        Route::post('/theaters', [TheaterController::class, 'store'])->name('theaters.store');
-        Route::get('/theaters/{id}/edit', [TheaterController::class, 'editView'])->name('theaters.edit');
-        Route::put('/theaters/{id}', [TheaterController::class, 'update'])->name('theaters.update');
-        Route::delete('/theaters/{id}', [TheaterController::class, 'destroy'])->name('theaters.destroy');
+        // 🏛️ قسم القاعات والمرافق (Venues الموحد بدلاً من القاعات والمسارح القديمة)
+        Route::get('/venues', [VenueController::class, 'index'])->name('venues.index');
+        Route::get('/venues/create', [VenueController::class, 'create'])->name('venues.create');
+        Route::post('/venues', [VenueController::class, 'store'])->name('venues.store');
+        Route::get('/venues/{id}/edit', [VenueController::class, 'edit'])->name('venues.edit');
+        Route::put('/venues/{id}', [VenueController::class, 'update'])->name('venues.update');
+        Route::delete('/venues/{id}', [VenueController::class, 'destroy'])->name('venues.destroy');
 
         // قسم المكتبات والكتب
         Route::get('/libraries', [LibraryController::class, 'index'])->name('libraries.index');
@@ -105,5 +96,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     });
 
 }); // 🟢 نهاية مجموعة admin الرئيسية
+use App\Http\Controllers\AdminReservationController;
 
-Route::post('/test-profile', [AdminAuthController::class, 'update'])->middleware(['auth:admin'])->name('test.profile');
+Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations.index');
+    Route::post('/reservations/{id}/cancel', [AdminReservationController::class, 'cancel'])->name('reservations.cancel');
+});

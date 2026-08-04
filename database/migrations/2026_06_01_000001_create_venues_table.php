@@ -11,8 +11,11 @@ return new class extends Migration
         Schema::create('venues', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cultural_center_id')->constrained('cultural_centers')->onDelete('cascade');
+            
+            // الربط بجدول venue_types
+            $table->foreignId('venue_type_id')->constrained('venue_types')->onDelete('restrict');
+            
             $table->string('name');
-            $table->string('type'); // hall, theater, or other
             $table->integer('capacity');
             $table->json('features')->nullable();
             $table->string('image')->nullable();

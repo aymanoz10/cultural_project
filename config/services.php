@@ -42,7 +42,7 @@ return [
         'api_version'     => env('WHATSAPP_API_VERSION', 'v21.0'),
         'otp_template'    => env('WHATSAPP_OTP_TEMPLATE'),
         'otp_language'    => env('WHATSAPP_OTP_LANGUAGE', 'ar'),
-         'instance_id' => env('WHATSAPP_INSTANCE_ID'),
+        'instance_id'     => env('WHATSAPP_INSTANCE_ID'),
     ],
 
     'otp' => [
@@ -51,8 +51,12 @@ return [
     ],
 
     'fcm' => [
-        'mode'       => env('FCM_MODE', 'log'),
-        'server_key' => env('FCM_SERVER_KEY'),
+        'mode'        => env('FCM_MODE', 'log'),
+        // FCM HTTP v1 — المصادقة عبر حساب خدمة (Service Account)
+        'project_id'  => env('FCM_PROJECT_ID'),
+        'credentials' => env('FCM_CREDENTIALS'), // المسار المطلق لملف service-account.json
+        // المفتاح القديم (Legacy) — لم يعد مستخدمًا بعد إيقاف Google له
+        'server_key'  => env('FCM_SERVER_KEY'),
     ],
 
 ];

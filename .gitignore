@@ -26,3 +26,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 .env
+.env.pre_mysql_backup
+_to_delete/

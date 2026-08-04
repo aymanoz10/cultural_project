@@ -7,12 +7,19 @@ use App\Events\ReservationCreated;
 use App\Events\WaitListPromoted;
 use App\Models\Activity;
 use App\Models\Reservation;
-use App\Http\Resources\ReservationResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ReservationController extends Controller
 {
+    private const DEFAULT_MAX_SEATS_PER_USER = 5;
+
+    /**
+     * عرض كافة حجوزات المستخدم الحالي
+     */
     public function index(Request $request)
     {
         $query = Reservation::with(['user', 'activity', 'venue'])
@@ -26,99 +33,210 @@ class ReservationController extends Controller
             $query->where('status', $request->status);
         }
 
-        return ReservationResource::collection($query->latest()->get());
+        return response()->json([
+            'success' => true,
+            'data'    => $query->latest()->get(),
+        ]);
     }
 
+    /**
+     * إنشاء حجز جديد (مع دعم Idempotency وتجزيء الحجز والترتيب الآمن للأقفال)
+     */
     public function add(Request $request)
     {
+        // 1. التحقق من صحة الإدخال
         $request->validate([
             'activity_id'      => 'required|exists:activities,id',
             'venue_id'         => 'nullable|exists:venues,id',
             'library_id'       => 'nullable|exists:libraries,id',
             'reservation_date' => 'required|date|after_or_equal:today',
+            'seats_count'      => 'required|integer|min:1|max:10',
+            'allow_partial'    => 'nullable|boolean',
         ]);
 
-        $activity = Activity::findOrFail($request->activity_id);
-        $user = $request->user();
+        $userId         = $request->user()->id;
+        $idempotencyKey = $request->header('X-Idempotency-Key');
 
-        $existing = Reservation::where('user_id', $user->id)
-            ->where('activity_id', $activity->id)
-            ->whereIn('status', [Reservation::STATUS_CONFIRMED, Reservation::STATUS_WAIT_LIST])
-            ->exists();
+        // 2. فحص مفتاح التوافقية (Idempotency Key) لمنع التكرار عند النقر المزدوج
+        if ($idempotencyKey) {
+            $cacheKey = "idempotency:reservation:{$userId}:{$idempotencyKey}";
+            $existingId = Cache::get($cacheKey);
 
-        if ($existing) {
-            return response()->json(['message' => 'لديك حجز مسبق لهذا النشاط'], 422);
+            if ($existingId) {
+                $existingReservation = Reservation::with(['activity', 'venue'])->find($existingId);
+                if ($existingReservation) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'تم استرجاع الحجز المسجل مسبقاً',
+                        'data'    => $existingReservation,
+                    ], 200);
+                }
+            }
         }
 
-        $status = $activity->hasAvailableSeats()
-            ? Reservation::STATUS_CONFIRMED
-            : Reservation::STATUS_WAIT_LIST;
+        $requestedSeats = (int) $request->seats_count;
+        $allowPartial   = $request->boolean('allow_partial', false);
 
-        $ticketId = 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
-        $qrPayload = json_encode([
-            'ticket_id'   => $ticketId,
-            'user_id'     => $user->id,
-            'activity_id' => $activity->id,
-            'status'      => $status,
-        ], JSON_UNESCAPED_UNICODE);
+        // 3. تنفيذ المعاملة بكفالة القفل المتشائم بالترتيب الموحد
+        $result = DB::transaction(function () use ($request, $userId, $requestedSeats, $allowPartial) {
+            
+            // الترتيب الذهبي: قفل Activity دائماً في البداية
+            $activity = Activity::where('id', $request->activity_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $reservation = Reservation::create([
-            'user_id'          => $user->id,
-            'ticket_id'        => $ticketId,
-            'qr_code'          => $qrPayload,
-            'activity_id'      => $activity->id,
-            'venue_id'         => $request->venue_id,
-            'library_id'       => $request->library_id,
-            'reservation_date' => $request->reservation_date,
-            'status'           => $status,
-        ]);
+            $maxAllowedSeats = $activity->max_seats_per_user ?? self::DEFAULT_MAX_SEATS_PER_USER;
 
-        $message = $status === Reservation::STATUS_WAIT_LIST
-            ? 'تمت إضافتك إلى قائمة الانتظار'
+            // التحقق من السقف الإجمالي لمقاعد المستخدم
+            $userExistingSeats = Reservation::where('user_id', $userId)
+                ->where('activity_id', $activity->id)
+                ->whereIn('status', [Reservation::STATUS_CONFIRMED, Reservation::STATUS_WAIT_LIST])
+                ->sum('seats_count');
+
+            if (($userExistingSeats + $requestedSeats) > $maxAllowedSeats) {
+                throw ValidationException::withMessages([
+                    'seats_count' => ["تجاوزت الحد الأقصى المسموح به للمقاعد لهذا النشاط ({$maxAllowedSeats} مقاعد)"],
+                ]);
+            }
+
+            // حساب المقاعد المتاحة
+            $confirmedSeatsSum = Reservation::where('activity_id', $activity->id)
+                ->where('status', Reservation::STATUS_CONFIRMED)
+                ->sum('seats_count');
+
+            $availableSeats = max(0, $activity->capacity - $confirmedSeatsSum);
+
+            // الخيار أ: تجزيء الحجز (Split Booking) في حال تفعيل allow_partial وجود توفر جزئي
+            if ($allowPartial && $availableSeats > 0 && $availableSeats < $requestedSeats) {
+                $confirmedCount = $availableSeats;
+                $waitlistCount  = $requestedSeats - $availableSeats;
+
+                // حجز المقاعد المتاحة
+                $confirmedRes = $this->makeReservationRecord($userId, $request, $confirmedCount, Reservation::STATUS_CONFIRMED);
+                ReservationCreated::dispatch($confirmedRes->load(['activity', 'user']));
+
+                // إضافة المتبقي للانتظار
+                $waitlistRes = $this->makeReservationRecord($userId, $request, $waitlistCount, Reservation::STATUS_WAIT_LIST);
+                ReservationCreated::dispatch($waitlistRes->load(['activity', 'user']));
+
+                return [
+                    'is_split'  => true,
+                    'confirmed' => $confirmedRes->load(['activity', 'venue']),
+                    'wait_list' => $waitlistRes->load(['activity', 'venue']),
+                    'message'   => "تم تأكيد {$confirmedCount} مقاعد، وإضافة {$waitlistCount} مقعد إلى قائمة الانتظار",
+                ];
+            }
+
+            // الخيار ب: النقل الكامل (Atomic Allocation)
+            $status = ($availableSeats >= $requestedSeats)
+                ? Reservation::STATUS_CONFIRMED
+                : Reservation::STATUS_WAIT_LIST;
+
+            $reservation = $this->makeReservationRecord($userId, $request, $requestedSeats, $status);
+            ReservationCreated::dispatch($reservation->load(['activity', 'user']));
+
+            return [
+                'is_split'    => false,
+                'reservation' => $reservation->load(['activity', 'venue']),
+                'status'      => $status,
+            ];
+        });
+
+        // 4. حفظ المعرف في الـ Cache لخاصية Idempotency
+        if ($idempotencyKey) {
+            $savedId = $result['is_split'] ? $result['confirmed']->id : $result['reservation']->id;
+            Cache::put("idempotency:reservation:{$userId}:{$idempotencyKey}", $savedId, now()->addDay());
+        }
+
+        // 5. صياغة الرد للمستخدم
+        if ($result['is_split']) {
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'],
+                'data'    => [
+                    'confirmed' => $result['confirmed'],
+                    'wait_list' => $result['wait_list'],
+                ],
+            ], 201);
+        }
+
+        $message = ($result['status'] === Reservation::STATUS_WAIT_LIST)
+            ? 'تمت إضافة طلبك إلى قائمة الانتظار لعدم توفر كامل المقاعد المطلوبة'
             : 'تم تأكيد الحجز بنجاح';
-
-        ReservationCreated::dispatch($reservation->load(['activity', 'user']));
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data'    => new ReservationResource($reservation->load(['activity', 'venue'])),
+            'data'    => $result['reservation'],
         ], 201);
     }
 
+    /**
+     * عرض تفاصيل حجز محدد
+     */
     public function show(Request $request, $id)
     {
         $reservation = Reservation::with(['activity', 'venue', 'library'])
             ->where('user_id', $request->user()->id)
             ->findOrFail($id);
 
-        return response()->json(['data' => new ReservationResource($reservation)]);
+        return response()->json(['data' => $reservation]);
     }
 
+    /**
+     * إلغاء حجز وترقية الانتظار بأمان ضد Deadlock
+     */
     public function cancel(Request $request, $id)
     {
-        $reservation = Reservation::where('user_id', $request->user()->id)->findOrFail($id);
+        $userId = $request->user()->id;
 
-        if ($reservation->status === Reservation::STATUS_CANCELLED) {
-            return response()->json(['message' => 'الحجز ملغى مسبقاً'], 422);
-        }
+        $reservation = DB::transaction(function () use ($id, $userId) {
+            
+            // أ) استعلام مبدئي لتحديد الفعالية بدون قفل
+            $unlockedReservation = Reservation::where('user_id', $userId)
+                ->select('id', 'activity_id')
+                ->findOrFail($id);
 
-        $wasConfirmed = $reservation->status === Reservation::STATUS_CONFIRMED;
-        $reservation->update(['status' => Reservation::STATUS_CANCELLED]);
+            // ب) القفل الأول: Activity دائماً أولاً تفادياً لـ Deadlock مع دالة add()
+            $activity = Activity::where('id', $unlockedReservation->activity_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($wasConfirmed) {
-            $this->promoteFromWaitList($reservation->activity_id);
-        }
+            // ج) القفل الثاني: Reservation ثانياً
+            $reservation = Reservation::where('id', $id)
+                ->where('user_id', $userId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        ReservationCancelledEvent::dispatch($reservation->load(['activity', 'user']));
+            if ($reservation->status === Reservation::STATUS_CANCELLED) {
+                throw ValidationException::withMessages([
+                    'reservation' => ['الحجز ملغى مسبقاً'],
+                ]);
+            }
+
+            $wasConfirmed = ($reservation->status === Reservation::STATUS_CONFIRMED);
+            $reservation->update(['status' => Reservation::STATUS_CANCELLED]);
+
+            // د) ترقية قائمة الانتظار عند إلغاء حجز مؤكد
+            if ($wasConfirmed) {
+                $this->promoteFromWaitListBounded($activity);
+            }
+
+            ReservationCancelledEvent::dispatch($reservation->load(['activity', 'user']));
+
+            return $reservation->fresh(['activity', 'venue']);
+        });
 
         return response()->json([
             'success' => true,
-            'message' => 'تم إلغاء الحجز',
-            'data'    => new ReservationResource($reservation->fresh()),
+            'message' => 'تم إلغاء الحجز بنجاح',
+            'data'    => $reservation,
         ]);
     }
 
+    /**
+     * عرض قائمة الانتظار لفعالية معينة
+     */
     public function waitList($activityId)
     {
         $waitList = Reservation::with('user')
@@ -127,36 +245,88 @@ class ReservationController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        return ReservationResource::collection($waitList);
+        return response()->json(['data' => $waitList]);
     }
 
-    private function promoteFromWaitList(int $activityId): void
+    // ==========================================
+    // Private Helper Methods (دوال مساعدة خاصة)
+    // ==========================================
+
+    /**
+     * دالة مساعدة لإنشاء سجل الحجز وتوليد Ticket ID و QR Payload
+     */
+    private function makeReservationRecord(int $userId, Request $request, int $seatsCount, string $status): Reservation
     {
-        $activity = Activity::find($activityId);
+        $ticketId = 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
 
-        if (! $activity || ! $activity->hasAvailableSeats()) {
-            return;
-        }
+        $qrPayload = json_encode([
+            'ticket_id'   => $ticketId,
+            'user_id'     => $userId,
+            'activity_id' => $request->activity_id,
+            'seats_count' => $seatsCount,
+            'status'      => $status,
+        ], JSON_UNESCAPED_UNICODE);
 
-        $next = Reservation::where('activity_id', $activityId)
-            ->where('status', Reservation::STATUS_WAIT_LIST)
-            ->orderBy('created_at')
-            ->first();
-
-        if (! $next) {
-            return;
-        }
-
-        $next->update([
-            'status'  => Reservation::STATUS_CONFIRMED,
-            'qr_code' => json_encode([
-                'ticket_id'   => $next->ticket_id,
-                'user_id'     => $next->user_id,
-                'activity_id' => $activityId,
-                'status'      => Reservation::STATUS_CONFIRMED,
-            ], JSON_UNESCAPED_UNICODE),
+        return Reservation::create([
+            'user_id'          => $userId,
+            'ticket_id'        => $ticketId,
+            'qr_payload'       => $qrPayload,
+            'activity_id'      => $request->activity_id,
+            'venue_id'         => $request->venue_id ?? null,
+            'library_id'       => $request->library_id ?? null,
+            'reservation_date' => $request->reservation_date,
+            'seats_count'      => $seatsCount,
+            'status'           => $status,
         ]);
+    }
 
-        WaitListPromoted::dispatch($next->fresh(['activity', 'user']));
+    /**
+     * ترقية قائمة الانتظار بطريقة محدودة تمنع الحلقات اللانهائية (Bounded Batch Promotion)
+     */
+    private function promoteFromWaitListBounded(Activity $activity): void
+    {
+        $confirmedSeatsSum = Reservation::where('activity_id', $activity->id)
+            ->where('status', Reservation::STATUS_CONFIRMED)
+            ->sum('seats_count');
+
+        $availableSeats = max(0, $activity->capacity - $confirmedSeatsSum);
+
+        if ($availableSeats <= 0) {
+            return;
+        }
+
+        // جلب أول 20 طلب انتظار مناسبين فقط لحماية أداء السيرفر
+        $candidates = Reservation::where('activity_id', $activity->id)
+            ->where('status', Reservation::STATUS_WAIT_LIST)
+            ->where('seats_count', '<=', $availableSeats)
+            ->orderBy('created_at')
+            ->limit(20)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($candidates as $candidate) {
+            if ($candidate->seats_count > $availableSeats) {
+                continue;
+            }
+
+            $candidate->status = Reservation::STATUS_CONFIRMED;
+            $candidate->qr_payload = json_encode([
+                'ticket_id'   => $candidate->ticket_id,
+                'user_id'     => $candidate->user_id,
+                'activity_id' => $activity->id,
+                'seats_count' => $candidate->seats_count,
+                'status'      => Reservation::STATUS_CONFIRMED,
+            ], JSON_UNESCAPED_UNICODE);
+
+            $candidate->save();
+
+            $availableSeats -= $candidate->seats_count;
+
+            WaitListPromoted::dispatch($candidate->fresh(['activity', 'user']));
+
+            if ($availableSeats <= 0) {
+                break;
+            }
+        }
     }
 }

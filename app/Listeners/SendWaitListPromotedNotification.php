@@ -4,9 +4,13 @@ namespace App\Listeners;
 
 use App\Events\WaitListPromoted;
 use App\Notifications\WaitListPromoted as WaitListPromotedNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
-class SendWaitListPromotedNotification
+class SendWaitListPromotedNotification implements ShouldQueue
 {
+    use InteractsWithQueue;
+
     public function handle(WaitListPromoted $event): void
     {
         $reservation = $event->reservation->loadMissing('activity', 'user');

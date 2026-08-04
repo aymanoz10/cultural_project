@@ -33,7 +33,8 @@ Route::post('/login/resend-otp', [AuthController::class, 'resendLoginOtp']);
 Route::post('/login/verify-otp', [AuthController::class, 'verifyLoginOtp']);
 
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
-Route::post('/admin/register', [AdminAuthController::class, 'register']);
+// 🔒 أُزيل مسار /admin/register العلني (كان يسمح بإنشاء سوبر أدمن دون مصادقة).
+// يُنشأ المشرفون عبر المسار المحمي POST /admin/admins (السوبر فقط) ضمن مجموعة auth:admin أدناه.
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'get']);
@@ -103,6 +104,7 @@ Route::middleware('auth:admin')->prefix('admin')->group(function () {
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
 
+    Route::post('/admins', [AdminAuthController::class, 'store']); // إنشاء مشرف جديد — يتحقق store من صلاحية السوبر
     Route::post('/admins/{id}', [AdminAuthController::class, 'edit']);
     Route::delete('/admins/{id}', [AdminAuthController::class, 'remove']);
 });
@@ -184,3 +186,21 @@ Route::middleware('auth:admin')->prefix('ads')->group(function () {
 
 Route::get('/ratings', [RatingController::class, 'index']);
 Route::post('/admin/register', [AdminAuthController::class, 'register']);
+// مسارات الحجوزات (تتطلب تسجيل دخول)
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // 1. عرض جميع حجوزات المستخدم
+    Route::get('/reservations', [ReservationController::class, 'index']);
+
+    // 2. إنشاء حجز جديد
+    Route::post('/reservations', [ReservationController::class, 'add']);
+
+    // 3. عرض تفاصيل حجز معين
+    Route::get('/reservations/{id}', [ReservationController::class, 'show']);
+
+    // 4. إلغاء حجز
+    Route::post('/reservations/{id}/cancel', [ReservationController::class, 'cancel']);
+
+    // 5. عرض قائمة الانتظار لفعالية محددة
+    Route::get('/activities/{activityId}/waitlist', [ReservationController::class, 'waitList']);
+});

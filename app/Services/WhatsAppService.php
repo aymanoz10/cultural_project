@@ -31,7 +31,8 @@ class WhatsAppService
             return;
         }
 
-        $response = Http::asForm()->post(
+        // مهلة وإعادة محاولة: يمنع تجميد الطلب عند بطء أو تعطّل الخدمة الخارجية
+        $response = Http::asForm()->timeout(10)->retry(2, 500)->post(
             "https://api.ultramsg.com/{$instanceId}/messages/chat",
             [
                 'token' => $token,
@@ -74,7 +75,8 @@ class WhatsAppService
                    "لا تشارك هذا الرمز مع أي شخص.\n" .
                    "صلاحيته 5 دقائق فقط.";
 
-        $response = Http::asForm()->post(
+        // مهلة وإعادة محاولة لضمان عدم تعليق الطلب
+        $response = Http::asForm()->timeout(10)->retry(2, 500)->post(
             "https://api.ultramsg.com/{$instanceId}/messages/chat",
             [
                 'token' => $token,
