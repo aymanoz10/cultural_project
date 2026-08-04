@@ -8,31 +8,26 @@ use Illuminate\Database\Eloquent\Model;
 class Activity extends Model
 {
     use HasFactory;
-    public const TYPES = [
-        'workshop',
-        'lecture',
-        'show',
-        'exhibition',
-        'festival',
-    ];
 
     protected $fillable = [
         'cultural_center_id',
-        'type',
-        'hall_id',
-        'theater_id',
+        'activity_type_id',
+        'venue_id',
         'title',
-        'host_name',
+        'presenter_name',
+        'presenter_avatar',
         'description',
+        'ticket_price',
+        'capacity',
         'start_time',
         'end_time',
-        'capacity',
         'image',
     ];
 
     protected $casts = [
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
+        'start_time'   => 'datetime',
+        'end_time'     => 'datetime',
+        'ticket_price' => 'decimal:2',
     ];
 
     public function culturalCenter()
@@ -40,14 +35,14 @@ class Activity extends Model
         return $this->belongsTo(CulturalCenter::class);
     }
 
-    public function hall()
+    public function activityType()
     {
-        return $this->belongsTo(Hall::class);
+        return $this->belongsTo(ActivityType::class);
     }
 
-    public function theater()
+    public function venue()
     {
-        return $this->belongsTo(Theater::class);
+        return $this->belongsTo(Venue::class);
     }
 
     public function reservations()
@@ -58,16 +53,6 @@ class Activity extends Model
     public function ratings()
     {
         return $this->morphMany(Rating::class, 'rateable');
-    }
-
-    public function ads()
-    {
-        return $this->morphMany(Ad::class, 'advertable');
-    }
-
-    public function getAverageRatingAttribute()
-    {
-        return $this->ratings()->avg('value') ?? 0;
     }
 
     public function confirmedReservationsCount(): int
@@ -83,4 +68,11 @@ class Activity extends Model
 
         return $this->confirmedReservationsCount() < $this->capacity;
     }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('value') ?? 0;
+    }
+
+
 }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Reservation extends Model
 {
     use HasFactory;
+
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_WAIT_LIST = 'wait_list';
     public const STATUS_CANCELLED = 'cancelled';
@@ -16,8 +17,7 @@ class Reservation extends Model
         'user_id',
         'ticket_id',
         'qr_code',
-        'hall_id',
-        'theater_id',
+        'venue_id',
         'activity_id',
         'library_id',
         'reservation_date',
@@ -33,14 +33,9 @@ class Reservation extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function hall()
+    public function venue()
     {
-        return $this->belongsTo(Hall::class);
-    }
-
-    public function theater()
-    {
-        return $this->belongsTo(Theater::class);
+        return $this->belongsTo(Venue::class);
     }
 
     public function activity()
@@ -55,8 +50,7 @@ class Reservation extends Model
 
     public function getCulturalCenterAttribute()
     {
-        return $this->hall?->culturalCenter
-            ?? $this->theater?->culturalCenter
+        return $this->venue?->culturalCenter
             ?? $this->activity?->culturalCenter
             ?? null;
     }

@@ -12,19 +12,21 @@ class ActivityResource extends JsonResource
         return [
             'id'                 => $this->id,
             'cultural_center_id' => $this->cultural_center_id,
-            'type'               => $this->type,
-            'hall_id'            => $this->hall_id,
-            'theater_id'         => $this->theater_id,
+            'activity_type_id'   => $this->activity_type_id,
+            'activity_type'      => $this->whenLoaded('activityType', fn () => new ActivityTypeResource($this->activityType)),
+            'venue_id'           => $this->venue_id,
             'title'              => $this->title,
-            'host_name'          => $this->host_name,
+            'presenter_name'     => $this->presenter_name,
+            'presenter_avatar'   => $this->presenter_avatar ? asset('storage/' . $this->presenter_avatar) : null,
             'description'        => $this->description,
-            'start_time'         => $this->start_time?->format('Y-m-d H:i:s'),
-            'end_time'           => $this->end_time?->format('Y-m-d H:i:s'),
+            'ticket_price'       => $this->ticket_price,
             'capacity'           => $this->capacity,
             'available_seats'    => $this->capacity !== null
                 ? max(0, $this->capacity - $this->confirmedReservationsCount())
                 : null,
-            'image'             => $this->image ? asset('storage/' . $this->image) : null,
+            'start_time'         => $this->start_time?->format('Y-m-d H:i:s'),
+            'end_time'           => $this->end_time?->format('Y-m-d H:i:s'),
+            'image'              => $this->image ? asset('storage/' . $this->image) : null,
         ];
     }
 }

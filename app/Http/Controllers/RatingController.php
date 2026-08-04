@@ -11,8 +11,7 @@ class RatingController extends Controller
 {
     private const RATEABLE_TYPES = [
         'activity' => \App\Models\Activity::class,
-        'hall'     => \App\Models\Hall::class,
-        'theater'  => \App\Models\Theater::class,
+        'venue'    => \App\Models\Venue::class,
         'center'   => \App\Models\CulturalCenter::class,
     ];
 

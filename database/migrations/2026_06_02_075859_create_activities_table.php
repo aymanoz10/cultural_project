@@ -11,14 +11,16 @@ return new class extends Migration
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cultural_center_id')->constrained()->onDelete('cascade');
-            $table->string('type')->default('workshop');
-            $table->foreignId('hall_id')->nullable()->constrained();
-            $table->foreignId('theater_id')->nullable()->constrained();
+            $table->foreignId('activity_type_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('venue_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
+            $table->string('presenter_name')->nullable();
+            $table->string('presenter_avatar')->nullable();
             $table->text('description');
+            $table->decimal('ticket_price', 10, 2)->nullable();
+            $table->integer('capacity')->nullable();
             $table->dateTime('start_time');
             $table->dateTime('end_time');
-            $table->integer('capacity')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
         });

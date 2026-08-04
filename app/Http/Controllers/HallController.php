@@ -104,6 +104,8 @@ class HallController extends Controller
     {
         $hall = Hall::findOrFail($id);
 
+        \App\Models\Activity::where('hall_id', $hall->id)->update(['hall_id' => null]);
+
         if ($hall->image) {
             Storage::disk('public')->delete($hall->image);
         }

@@ -22,7 +22,7 @@
       </a>
       <div>
         <div class="flex items-center gap-2">
-          <span class="pill bg-slate-100 text-slate-700 text-xs font-bold">{{ $activity->type ?? 'فعالية' }}</span>
+          <span class="pill bg-slate-100 text-slate-700 text-xs font-bold">{{ $activity->activityType?->title ?? 'فعالية' }}</span>
           @if($isFinished)
             <span class="pill status-slate text-xs">مكتملة</span>
           @elseif($isUpcoming)

@@ -15,7 +15,7 @@ class ReservationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Reservation::with(['user', 'activity', 'hall', 'theater'])
+        $query = Reservation::with(['user', 'activity', 'venue'])
             ->where('user_id', $request->user()->id);
 
         if ($request->has('activity_id')) {
@@ -33,8 +33,7 @@ class ReservationController extends Controller
     {
         $request->validate([
             'activity_id'      => 'required|exists:activities,id',
-            'hall_id'          => 'nullable|exists:halls,id',
-            'theater_id'       => 'nullable|exists:theaters,id',
+            'venue_id'         => 'nullable|exists:venues,id',
             'library_id'       => 'nullable|exists:libraries,id',
             'reservation_date' => 'required|date|after_or_equal:today',
         ]);
@@ -68,8 +67,7 @@ class ReservationController extends Controller
             'ticket_id'        => $ticketId,
             'qr_code'          => $qrPayload,
             'activity_id'      => $activity->id,
-            'hall_id'          => $request->hall_id,
-            'theater_id'       => $request->theater_id,
+            'venue_id'         => $request->venue_id,
             'library_id'       => $request->library_id,
             'reservation_date' => $request->reservation_date,
             'status'           => $status,
@@ -84,13 +82,13 @@ class ReservationController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data'    => new ReservationResource($reservation->load(['activity', 'hall', 'theater'])),
+            'data'    => new ReservationResource($reservation->load(['activity', 'venue'])),
         ], 201);
     }
 
     public function show(Request $request, $id)
     {
-        $reservation = Reservation::with(['activity', 'hall', 'theater', 'library'])
+        $reservation = Reservation::with(['activity', 'venue', 'library'])
             ->where('user_id', $request->user()->id)
             ->findOrFail($id);
 

@@ -10,26 +10,20 @@ class CulturalCenter extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'location', 'description'];
+    protected $fillable = ['name', 'location', 'map_location', 'description', 'features'];
+
+    protected $casts = [
+        'features' => 'array',
+    ];
 
     public function photos(): HasMany
     {
         return $this->hasMany(CulturalCenterPhoto::class);
     }
 
-    public function theaters(): HasMany
+    public function venues(): HasMany
     {
-        return $this->hasMany(Theater::class);
-    }
-
-    public function halls(): HasMany
-    {
-        return $this->hasMany(Hall::class);
-    }
-
-    public function libraries(): HasMany
-    {
-        return $this->hasMany(Library::class);
+        return $this->hasMany(Venue::class);
     }
 
     public function activities(): HasMany

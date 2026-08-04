@@ -15,6 +15,7 @@ public function up(): void
         $table->id();
         $table->string('name');
         $table->string('location');
+        $table->string('map_location')->nullable();
         $table->text('description')->nullable();
          $table->string('image')->nullable();
 

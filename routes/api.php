@@ -5,10 +5,11 @@ use App\Http\Controllers\{
     AuthController,
     AdminAuthController,
     CulturalCenterController,
-    HallController,
-    TheaterController,
+    VenueController,
+    VenueReservationController,
     LibraryController,
     ActivityController,
+    ActivityTypeController,
     ReservationController,
     RatingController,
     SuggestionController,
@@ -23,9 +24,6 @@ use App\Http\Controllers\{
 };
 use Illuminate\Http\Request;
 
-// ═══════════════════════════════════════
-// Public Auth Routes (بدون توكن)
-// ═══════════════════════════════════════
 Route::post('/register/send-otp', [AuthController::class, 'sendRegisterOtp']);
 Route::post('/register/resend-otp', [AuthController::class, 'resendRegisterOtp']);
 Route::post('/register/verify-otp', [AuthController::class, 'verifyRegisterOtp']);
@@ -37,9 +35,6 @@ Route::post('/login/verify-otp', [AuthController::class, 'verifyLoginOtp']);
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
 Route::post('/admin/register', [AdminAuthController::class, 'register']);
 
-// ═══════════════════════════════════════
-// Protected User Routes (يحتاج Bearer Token)
-// ═══════════════════════════════════════
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'get']);
     Route::put('/profile', [AuthController::class, 'update']);
@@ -65,6 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/cancel', [ReservationController::class, 'cancel']);
     });
 
+    Route::post('/venue-reservations', [VenueReservationController::class, 'store']);
+
     Route::prefix('ratings')->group(function () {
         Route::post('/', [RatingController::class, 'add']);
         Route::put('/{id}', [RatingController::class, 'edit']);
@@ -81,9 +78,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::post('/volunteerings', [VolunteeringController::class, 'add']);
 
-// ═══════════════════════════════════════
-// Protected Admin Routes
-// ═══════════════════════════════════════
 Route::middleware('auth:admin')->prefix('admin')->group(function () {
     Route::get('/profile', [AdminAuthController::class, 'get']);
     
@@ -99,6 +93,9 @@ Route::middleware('auth:admin')->prefix('admin')->group(function () {
     Route::get('/volunteerings', [VolunteeringController::class, 'index']);
     Route::put('/volunteerings/{id}/status', [VolunteeringController::class, 'updateStatus']);
 
+    Route::get('/venue-reservations', [VenueReservationController::class, 'index']);
+    Route::put('/venue-reservations/{id}/status', [VenueReservationController::class, 'updateStatus']);
+
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
@@ -110,11 +107,9 @@ Route::middleware('auth:admin')->prefix('admin')->group(function () {
     Route::delete('/admins/{id}', [AdminAuthController::class, 'remove']);
 });
 
-// ═══════════════════════════════════════
-// Public Centers/Theaters/Halls/Libraries
-// ═══════════════════════════════════════
 Route::prefix('centers')->group(function () {
     Route::get('/', [CulturalCenterController::class, 'index']);
+    Route::get('/{id}', [CulturalCenterController::class, 'show']);
 
     Route::middleware('auth:admin')->group(function () {
         Route::post('/', [CulturalCenterController::class, 'add']);
@@ -125,23 +120,14 @@ Route::prefix('centers')->group(function () {
     });
 });
 
-Route::prefix('theaters')->group(function () {
-    Route::get('/', [TheaterController::class, 'index']);
+Route::prefix('venues')->group(function () {
+    Route::get('/', [VenueController::class, 'index']);
+    Route::get('/{id}', [VenueController::class, 'show']);
 
     Route::middleware('auth:admin')->group(function () {
-        Route::post('/', [TheaterController::class, 'add']);
-        Route::post('/{id}', [TheaterController::class, 'edit']);
-        Route::delete('/{id}', [TheaterController::class, 'remove']);
-    });
-});
-
-Route::prefix('halls')->group(function () {
-    Route::get('/', [HallController::class, 'index']);
-
-    Route::middleware('auth:admin')->group(function () {
-        Route::post('/', [HallController::class, 'add']);
-        Route::post('/{id}', [HallController::class, 'edit']);
-        Route::delete('/{id}', [HallController::class, 'remove']);
+        Route::post('/', [VenueController::class, 'store']);
+        Route::post('/{id}', [VenueController::class, 'update']);
+        Route::delete('/{id}', [VenueController::class, 'destroy']);
     });
 });
 
@@ -152,6 +138,16 @@ Route::prefix('libraries')->group(function () {
         Route::post('/', [LibraryController::class, 'add']);
         Route::post('/{id}', [LibraryController::class, 'edit']);
         Route::delete('/{id}', [LibraryController::class, 'remove']);
+    });
+});
+
+Route::prefix('activity-types')->group(function () {
+    Route::get('/', [ActivityTypeController::class, 'index']);
+
+    Route::middleware('auth:admin')->group(function () {
+        Route::post('/', [ActivityTypeController::class, 'store']);
+        Route::post('/{id}', [ActivityTypeController::class, 'update']);
+        Route::delete('/{id}', [ActivityTypeController::class, 'destroy']);
     });
 });
 
