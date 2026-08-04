@@ -6,17 +6,23 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'لوحة التحكم') | منظومة الثقافة</title>
 
-  <!-- Tailwind CSS CDN -->
+  <script>
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- الخطوط الرسمية -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-  <!-- إعدادات Tailwind المتطورة -->
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -53,30 +59,31 @@
     }
   </script>
 
-  <!-- أنماط CSS المخصصة والدقيقة -->
   <style>
-    root { color-scheme: light; }
-   body {
+    body {
       font-family: 'Cairo', 'Tajawal', sans-serif;
       background-color: #F8FAFC;
       color: #0F172A;
       -webkit-tap-highlight-color: transparent;
-
-      /* 🎨 إضافة خلفية الزخرفة */
-      background-image: url("{{ asset('images/WhiteBackground.jpeg') }}");
-      background-repeat: repeat;         /* لتكرار النمط المزخرف بسلاسة */
-      background-size: 900px;             /* تحكّم بحجم الزخرفة حسب الرغبة */
+      background-image: url("{{ asset('images/WhiteBackground.png') }}");
+      background-repeat: repeat;
+      background-size: 900px;
       background-position: center top;
-      background-attachment: fixed;       /* تثبيت الخلفية أثناء التمرير */
+      background-attachment: fixed;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* شريط التمرير الاحترافي */
+    html.dark body {
+      background-color: #1a1a1a;
+      color: #f3f4f6;
+      background-image: url("{{ asset('images/DarkBackground.jpg') }}");
+    }
+
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    html.dark ::-webkit-scrollbar-thumb { background: #d4af37; }
 
-    /* الكروت والأسطح */
     .card {
       background: #FFFFFF;
       border-radius: 1.5rem;
@@ -84,12 +91,12 @@
       box-shadow: 0 10px 30px -12px rgba(15, 76, 58, 0.06);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 36px -12px rgba(15, 76, 58, 0.12);
+    html.dark .card {
+      background: rgba(26, 26, 26, 0.95);
+      border-color: rgba(212, 175, 55, 0.3);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
-    /* القائمة الجانبية */
     .sidebar-item {
       transition: all 0.2s font-medium;
       border-radius: 0.875rem;
@@ -99,45 +106,7 @@
       color: #FFFFFF;
       box-shadow: 0 8px 20px -6px rgba(15, 76, 58, 0.5);
     }
-    .sidebar-item.active .side-ic { color: #FFFFFF !important; }
 
-    /* النوافذ المنبثقة (Modals) */
-    .modal-overlay {
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      background: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(8px);
-    }
-    .modal-overlay.active {
-      display: flex;
-      opacity: 1;
-    }
-    .modal-content {
-      transform: scale(0.95);
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .modal-overlay.active .modal-content {
-      transform: scale(1);
-    }
-
-    /* شارات الحالة (Pills & Badges) */
-    .pill {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .status-active { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
-    .status-pending { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
-    .status-rejected { background: #FFE4E6; color: #BE123C; border: 1px solid #FECDD3; }
-    .status-indigo { background: #E0E7FF; color: #4338CA; border: 1px solid #C7D2FE; }
-    .status-slate { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
-
-    /* الجداول العصرية */
     .table-wrap table { width: 100%; border-collapse: separate; border-spacing: 0; }
     .table-wrap thead th {
       font-size: 0.75rem;
@@ -149,18 +118,23 @@
       border-bottom: 1px solid #E2E8F0;
       white-space: nowrap;
     }
+    html.dark .table-wrap thead th {
+      background: rgba(0, 0, 0, 0.3);
+      color: #d4af37;
+      border-bottom-color: rgba(212, 175, 55, 0.2);
+    }
     .table-wrap tbody td {
       padding: 1rem 1.25rem;
       font-size: 0.85rem;
       color: #334155;
       border-bottom: 1px solid #F1F5F9;
       white-space: nowrap;
-      transition: background 0.15s ease;
     }
-    .table-wrap tbody tr:last-child td { border-bottom: none; }
-    .table-wrap tbody tr:hover td { background: #F8FAFC; }
+    html.dark .table-wrap tbody td {
+      color: #9ca3af;
+      border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
 
-    /* مدخلات النصوص النموذجية */
     .form-input, input[type=text], input[type=password], input[type=date], input[type=number], select, textarea {
       background: #FFFFFF;
       border: 1px solid #CBD5E1;
@@ -172,28 +146,12 @@
       color: #0F172A;
       transition: all 0.2s ease;
     }
-    .form-input:focus, input:focus, select:focus, textarea:focus {
-      border-color: #0F4C3A;
-      box-shadow: 0 0 0 4px rgba(15, 76, 58, 0.1);
-      background: #FFFFFF;
+    html.dark .form-input, html.dark input, html.dark select, html.dark textarea {
+      background: #141414;
+      border-color: rgba(212, 175, 55, 0.3);
+      color: #f3f4f6;
     }
 
-    /* الأزرار المصممة */
-    .btn-forest {
-      background: linear-gradient(135deg, #0F4C3A 0%, #0C4132 100%);
-      color: #FFFFFF;
-      font-weight: 700;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(15, 76, 58, 0.25);
-    }
-    .btn-forest:hover {
-      background: linear-gradient(135deg, #0C4132 0%, #093428 100%);
-      box-shadow: 0 6px 16px rgba(15, 76, 58, 0.35);
-      transform: translateY(-1px);
-    }
-    .btn-forest:active { transform: translateY(0); }
-
-    /* حركات وتأثيرات الظهور */
     .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
@@ -203,7 +161,7 @@
 
   @stack('styles')
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 dark:bg-[#1a1a1a] text-slate-800 dark:text-gray-100 antialiased min-h-screen flex flex-col transition-colors duration-300">
 
 <div class="flex min-h-screen relative overflow-x-hidden">
 
@@ -222,21 +180,18 @@
     {{-- PAGE CONTENT --}}
     <div class="flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] w-full mx-auto animate-fade-in">
       
-      <!-- هيدر الصفحة والتصنيفات -->
       <div class="flex items-center justify-between gap-4">
-        <div>
-        </div>
+        <div></div>
         @yield('page-actions')
       </div>
 
-      <!-- تنبيهات النظام الناجحة -->
       @if (session('success'))
-        <div class="card p-4 bg-emerald-50/90 border-emerald-200/80 text-emerald-800 text-sm font-extrabold flex items-center justify-between gap-3 animate-fade-in shadow-soft-xs">
+        <div class="card p-4 bg-emerald-50/90 dark:bg-[#1f1f1f] border-emerald-200/80 dark:border-[#d4af37]/20 text-emerald-800 dark:text-[#d4af37] text-sm font-extrabold flex items-center justify-between gap-3 animate-fade-in shadow-soft-xs">
           <div class="flex items-center gap-3">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>{{ session('success') }}</span>
           </div>
-          <button onclick="this.parentElement.remove()" class="text-emerald-600 hover:text-emerald-900 font-bold p-1">✕</button>
+          <button onclick="this.parentElement.remove()" class="text-emerald-600 dark:text-[#d4af37] hover:text-emerald-900 font-bold p-1">✕</button>
         </div>
       @endif
 
@@ -248,14 +203,22 @@
   </main>
 </div>
 
-{{-- Shared modal container for page-specific modals --}}
 @stack('modals')
 
-<!-- السكربتات الأساسية المحدثة -->
 <script>
   const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
 
-  // إدارة النوافذ المنبثقة بحركات ناعمة
+  function toggleTheme() {
+    const htmlEl = document.documentElement;
+    if (htmlEl.classList.contains('dark')) {
+      htmlEl.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      htmlEl.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  }
+
   function openModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
@@ -270,7 +233,6 @@
     document.body.classList.remove('overflow-hidden');
   }
 
-  // إغلاق المودال عند النقر على الخلفية
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay')) {
       e.target.classList.remove('active');
@@ -278,8 +240,7 @@
     }
   });
 
-  // التحكم بالشريط الجانبي على أجهزة الموبايل بشكل سلس
-  const mobileBtn = document.getElementById('mobile-menu-btn');
+  const mobileBtn = document.getElementById('mobile-sidebar-toggle') || document.getElementById('mobile-menu-btn');
   const backdrop = document.getElementById('mobile-sidebar-backdrop');
 
   if (mobileBtn) {

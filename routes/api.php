@@ -86,7 +86,12 @@ Route::post('/volunteerings', [VolunteeringController::class, 'add']);
 // ═══════════════════════════════════════
 Route::middleware('auth:admin')->prefix('admin')->group(function () {
     Route::get('/profile', [AdminAuthController::class, 'get']);
-    Route::put('/profile', [AdminAuthController::class, 'update']);
+    
+    // مسار حفظ المستخدم الجديد من لوحة التحكم (يرتبط بدالة store)
+    
+    // تحديث الملف الشخصي للأدمن (يدعم POST و PUT معاً)
+    Route::match(['post', 'put'], '/profile/update', [AdminAuthController::class, 'update'])->name('admin.profile.update');    
+    
     Route::post('/logout', [AdminAuthController::class, 'logout']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -182,3 +187,4 @@ Route::middleware('auth:admin')->prefix('ads')->group(function () {
 });
 
 Route::get('/ratings', [RatingController::class, 'index']);
+Route::post('/admin/register', [AdminAuthController::class, 'register']);

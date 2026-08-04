@@ -1,55 +1,56 @@
-<?php
+    <?php
 
-use App\Models\User;
-use App\Models\Admin;
+    use App\Models\User;
+    use App\Models\Admin;
 
-return [
+    return [
 
-    'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
-    ],
-
-    'guards' => [
-        'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
+        'defaults' => [
+            'guard' => env('AUTH_GUARD', 'web'),
+            'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
         ],
-        // تم دمج حارس الأدمن هنا
-       'admin' => [
-        'driver' => 'sanctum', // <--- هذا التغيير هو الأهم
-        'provider' => 'admins',
-    ],
-    ],
 
-    'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
-        ],
-        // تم دمج مزود الأدمن هنا
-        'admins' => [
-            'driver' => 'eloquent',
-            'model' => Admin::class,
-        ],
-    ],
+        'guards' => [
+            'web' => [
+                'driver' => 'session',
+                'provider' => 'users',
+            ],
 
-    'passwords' => [
-        'users' => [
-            'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
-            'throttle' => 60,
+            // 🟢 تم تغيير الدرايفر هنا من sanctum إلى session
+            'admin' => [
+                'driver' => 'session',
+                'provider' => 'admins',
+            ],
         ],
-        // يمكنك إضافة broker للأدمن أيضاً إذا أردت
-        'admins' => [
-            'provider' => 'admins',
-            'table' => 'password_reset_tokens',
-            'expire' => 60,
-            'throttle' => 60,
+
+        'providers' => [
+            'users' => [
+                'driver' => 'eloquent',
+                'model' => env('AUTH_MODEL', User::class),
+            ],
+
+            'admins' => [
+                'driver' => 'eloquent',
+                'model' => Admin::class,
+            ],
         ],
-    ],
 
-    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+        'passwords' => [
+            'users' => [
+                'provider' => 'users',
+                'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+                'expire' => 60,
+                'throttle' => 60,
+            ],
 
-];
+            'admins' => [
+                'provider' => 'admins',
+                'table' => 'password_reset_tokens',
+                'expire' => 60,
+                'throttle' => 60,
+            ],
+        ],
+
+        'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+    ];
