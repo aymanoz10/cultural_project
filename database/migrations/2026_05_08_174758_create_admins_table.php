@@ -17,7 +17,9 @@ public function up(): void
         $table->string('avatar')->nullable();
         $table->string('phone')->unique();
         $table->string('password');
-        $table->string('role')->default('admin'); // super | admin | ticketsAdmin
+        $table->unsignedBigInteger('center_id')->nullable();
+        $table->string('status')->default('active'); // active, pending, banned
+        $table->string('role')->default('super,admin,ticketsAdmin'); // super | admin | ticketsAdmin
         $table->rememberToken();
         $table->timestamps();
     });

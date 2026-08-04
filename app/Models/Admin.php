@@ -10,23 +10,38 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Admin extends Authenticatable
 {
-    use HasApiTokens, HasDeviceTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
-        'avatar',
-        'phone',
-        'password',
+        'name', 
+        'avatar', 
+        'phone', 
+        'password', 
         'role',
+        'center_id', // ✅ تم إضافتها حتى يتم حفظ المركز الثقافي عند إنشاء المستخدم
+        'status',    // ✅ تم إضافتها حتى يتم حفظ حالة الحساب (active, pending, banned)
     ];
 
     protected $hidden = [
-        'password',
+        'password', 
         'remember_token',
     ];
 
+    // ✅ التحقق إن كان سوبر أدمن (يفحص النص مرونة لو كان يحتوي على super)
     public function isSuper(): bool
     {
-        return $this->role === 'super';
+        return str_contains($this->role ?? '', 'super');
+    }
+
+    // ✅ التحقق إن كان أدمن عادي
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    // ✅ التحقق إن كان مسؤول تذاكر فقط
+    public function isTicketsAdmin(): bool
+    {
+        return $this->role === 'ticketsAdmin';
     }
 }
