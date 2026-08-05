@@ -59,4 +59,12 @@ class Admin extends Authenticatable
     {
         return $this->role === AdminRole::Tickets->value;
     }
+
+    /**
+     * المركز الثقافي المسؤول عنه المشرف (للأدوار غير super).
+     */
+    public function culturalCenter()
+    {
+        return $this->belongsTo(CulturalCenter::class, 'center_id');
+    }
 }

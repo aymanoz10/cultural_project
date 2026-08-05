@@ -3,6 +3,10 @@
 @section('page-title', 'الملف الشخصي')
 
 @section('content')
+@php
+  $roleLabels = ['super' => 'مشرف عام', 'admin' => 'مشرف مركز', 'ticketsAdmin' => 'مسؤول تذاكر'];
+  $roleLabel  = $roleLabels[$admin->role ?? ''] ?? ($admin->role_name ?? 'مشرف');
+@endphp
 <div class="max-w-4xl mx-auto space-y-6 text-slate-800 dark:text-slate-100 transition-colors duration-300">
     
     <!-- تنبيهات النجاح -->
@@ -42,12 +46,12 @@
         <!-- غلاف الهيدر العلوي (عرض كامل وارتفاع تلقائي متناسق 100% بدون قص أو فراغات) -->
         <div class="relative w-full overflow-hidden bg-white dark:bg-[#161f17]">
             <!-- صورة الوضع الفاتح (Light Theme) -->
-            <img src="{{ asset('images/pretty-light.png') }}" 
+            <img src="{{ asset('images/pretty-light.webp') }}" 
                  alt="مديرية الثقافة بدمشق - وضع فاتح" 
                  class="w-full h-auto block dark:hidden">
 
             <!-- صورة الوضع الداكن (Dark Theme) -->
-            <img src="{{ asset('images/pretty.png') }}" 
+            <img src="{{ asset('images/pretty.webp') }}" 
                  alt="مديرية الثقافة بدمشق - وضع داكن" 
                  class="w-full h-auto block hidden dark:block">
         </div>
@@ -82,15 +86,15 @@
                     <h2 class="text-2xl font-black text-slate-900 dark:text-[#f3f4f6] tracking-wide">{{ $admin->name }}</h2>
                     <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
                         <span class="px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-forest-50 dark:bg-[#d4af37]/10 text-forest-600 dark:text-[#d4af37] border border-forest-200 dark:border-[#d4af37]/30">
-                            {{ $admin->role_name ?? 'Admin' }}
+                            {{ $roleLabel }}
                         </span>
-                        <span class="text-xs text-slate-400 dark:text-slate-400 font-mono">{{ $admin->email }}</span>
+                        <span class="text-xs text-slate-400 dark:text-slate-400 font-mono">{{ $admin->phone }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- النموذج -->
-            <form action="{{ route('test.profile') }}" method="POST" enctype="multipart/form-data" class="space-y-6 text-right">
+            <form action="/admin/profile/update" method="POST" enctype="multipart/form-data" class="space-y-6 text-right">
                 @csrf
                 
                 <input type="file" id="avatar-input" name="avatar" class="hidden" accept="image/jpeg,image/png,image/jpg,image/webp">
@@ -107,13 +111,13 @@
                                placeholder="أدخل اسمك الكامل">
                     </div>
 
-                    <!-- البريد الإلكتروني -->
+                    <!-- الدور -->
                     <div class="space-y-2">
-                        <label class="block text-xs font-extrabold text-slate-700 dark:text-slate-300">البريد الإلكتروني</label>
-                        <input type="email" 
-                               value="{{ $admin->email }}"
+                        <label class="block text-xs font-extrabold text-slate-700 dark:text-slate-300">الدور</label>
+                        <input type="text"
+                               value="{{ $roleLabel }}"
                                disabled
-                               class="w-full bg-slate-100 dark:bg-black/20 text-slate-400 dark:text-slate-500 text-xs rounded-xl px-4 py-3 border border-slate-200 dark:border-white/5 font-medium font-mono cursor-not-allowed">
+                               class="w-full bg-slate-100 dark:bg-black/20 text-slate-500 dark:text-slate-400 text-xs rounded-xl px-4 py-3 border border-slate-200 dark:border-white/5 font-bold cursor-not-allowed">
                     </div>
 
                     <!-- رقم الهاتف -->

@@ -214,6 +214,12 @@ class ReservationController extends Controller
                 ]);
             }
 
+            if ($reservation->status === Reservation::STATUS_COMPLETED) {
+                throw ValidationException::withMessages([
+                    'reservation' => ['لا يمكن إلغاء تذكرة تم تسجيل حضورها'],
+                ]);
+            }
+
             $wasConfirmed = ($reservation->status === Reservation::STATUS_CONFIRMED);
             $reservation->update(['status' => Reservation::STATUS_CANCELLED]);
 
@@ -259,18 +265,10 @@ class ReservationController extends Controller
     {
         $ticketId = 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
 
-        $qrPayload = json_encode([
-            'ticket_id'   => $ticketId,
-            'user_id'     => $userId,
-            'activity_id' => $request->activity_id,
-            'seats_count' => $seatsCount,
-            'status'      => $status,
-        ], JSON_UNESCAPED_UNICODE);
-
+        // ملاحظة: حمولة QR المشفّرة تُولَّد تلقائياً في حدث created بنموذج Reservation
         return Reservation::create([
             'user_id'          => $userId,
             'ticket_id'        => $ticketId,
-            'qr_payload'       => $qrPayload,
             'activity_id'      => $request->activity_id,
             'venue_id'         => $request->venue_id ?? null,
             'library_id'       => $request->library_id ?? null,
@@ -309,15 +307,8 @@ class ReservationController extends Controller
                 continue;
             }
 
+            // الحمولة المشفّرة مستقلّة عن الحالة (تُقرأ الحالة من قاعدة البيانات عند المسح)
             $candidate->status = Reservation::STATUS_CONFIRMED;
-            $candidate->qr_payload = json_encode([
-                'ticket_id'   => $candidate->ticket_id,
-                'user_id'     => $candidate->user_id,
-                'activity_id' => $activity->id,
-                'seats_count' => $candidate->seats_count,
-                'status'      => Reservation::STATUS_CONFIRMED,
-            ], JSON_UNESCAPED_UNICODE);
-
             $candidate->save();
 
             $availableSeats -= $candidate->seats_count;

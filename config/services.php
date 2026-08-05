@@ -58,5 +58,9 @@ return [
         // المفتاح القديم (Legacy) — لم يعد مستخدمًا بعد إيقاف Google له
         'server_key'  => env('FCM_SERVER_KEY'),
     ],
+    'openrouter' => [
+        'key'   => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'openai/gpt-4o-mini'),
+     ],
 
 ];

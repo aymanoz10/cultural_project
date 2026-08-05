@@ -18,7 +18,7 @@
             background-color: #06221a;
             background-image: 
                 radial-gradient(circle at 50% 50%, rgba(13, 75, 59, 0.6) 0%, rgba(4, 22, 17, 0.95) 100%),
-                url("{{ asset('images/background.jpeg') }}");
+                url("{{ asset('images/background.webp') }}");
             background-repeat: repeat;
             background-size: 1160px;
             background-position: center;
@@ -44,7 +44,7 @@
     <div class="w-full max-w-[400px] rounded-[28px] sm:rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] p-6 sm:p-9 pt-20 sm:pt-24 relative z-10 text-center border border-white/40 backdrop-blur-sm my-auto" style="background-color: #ffffff !important;">
 
       <div class="absolute -top-14 sm:-top-20 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 w-full px-4">
-          <img src="{{ asset('images/logo.png') }}" 
+          <img src="{{ asset('images/logo.webp') }}" 
                alt="مديرية الثقافة بدمشق" 
                class="w-28 h-28 sm:w-40 sm:h-40 object-contain filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.35)]"
                onerror="this.onerror=null; this.src='https://via.placeholder.com/200x180/ffffff/06221a?text=ضع+اللوغو+هنا';">

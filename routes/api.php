@@ -20,6 +20,9 @@ use App\Http\Controllers\{
     AdminSuggestionController,
     NotificationController,
     DeviceTokenController,
+    AiAssistantController,
+    AiComparisonController,
+    AiRecommendationController,
     DemoNotificationController,
 };
 use Illuminate\Http\Request;
@@ -40,7 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'get']);
     Route::put('/profile', [AuthController::class, 'update']);
     Route::post('/logout', [AuthController::class, 'logout']);
-
+    Route::post('/assistant/ask', [AiAssistantController::class, 'ask']);
+    Route::get('/ai/for-you', [AiRecommendationController::class, 'forYou']);
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -204,3 +208,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // 5. عرض قائمة الانتظار لفعالية محددة
     Route::get('/activities/{activityId}/waitlist', [ReservationController::class, 'waitList']);
 });
+
+Route::post('/ai/compare', [AiComparisonController::class, 'compare']);

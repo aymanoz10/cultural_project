@@ -14,10 +14,15 @@ return new class extends Migration
         Schema::create('books', function (Blueprint $table) {
             $table->id();
             $table->foreignId('library_id')->constrained()->onDelete('cascade');
+            $table->string('cover_image')->nullable();          // renamed from: image
             $table->string('title');
             $table->string('author');
+            $table->string('category')->index();
+            $table->text('description')->nullable();
+            $table->unsignedInteger('pages_count')->nullable();
+            $table->string('file_size')->nullable();
+            $table->string('language')->default('العربية');
             $table->boolean('is_available')->default(true);
-            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

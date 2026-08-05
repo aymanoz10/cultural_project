@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
         ]);
 
+        // الثقة بوكلاء العكس (ngrok / أي reverse proxy) حتى تُولَّد الروابط بنفس
+        // نطاق وبروتوكول الطلب الأصلي (https)، فيختفي خطأ Mixed Content على الأنفاق.
+        $middleware->trustProxies(at: '*');
+
         // توحيد استجابات الـAPI كـ JSON (تُصبح أخطاء التحقق 422 بصيغة JSON بدل صفحات HTML)
         $middleware->api(prepend: [
             \App\Http\Middleware\ForceJsonResponse::class,

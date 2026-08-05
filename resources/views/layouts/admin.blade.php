@@ -60,47 +60,92 @@
   </script>
 
   <style>
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: 'Cairo', 'Tajawal', sans-serif;
-      background-color: #F8FAFC;
+      background-color: #F5F8F6;
       color: #0F172A;
       -webkit-tap-highlight-color: transparent;
-      background-image: url("{{ asset('images/WhiteBackground.png') }}");
-      background-repeat: repeat;
-      background-size: 900px;
-      background-position: center top;
-      background-attachment: fixed;
+      background-image:
+        radial-gradient(1100px 560px at 88% -12%, rgba(15, 76, 58, 0.06), transparent 60%),
+        radial-gradient(900px 520px at 6% 112%, rgba(212, 175, 55, 0.05), transparent 55%),
+        url("{{ asset('images/WhiteBackground.webp') }}");
+      background-repeat: no-repeat, no-repeat, repeat;
+      background-size: auto, auto, 900px;
+      background-position: center top, center top, center top;
+      background-attachment: fixed, fixed, fixed;
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     html.dark body {
-      background-color: #1a1a1a;
+      background-color: #141414;
       color: #f3f4f6;
-      background-image: url("{{ asset('images/DarkBackground.jpg') }}");
+      background-image:
+        radial-gradient(1100px 560px at 88% -12%, rgba(15, 76, 58, 0.22), transparent 60%),
+        radial-gradient(900px 520px at 6% 112%, rgba(212, 175, 55, 0.07), transparent 55%),
+        url("{{ asset('images/DarkBackground.webp') }}");
     }
 
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::selection { background: rgba(15, 76, 58, 0.16); }
+    html.dark ::selection { background: rgba(212, 175, 55, 0.30); color: #fff; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
-    html.dark ::-webkit-scrollbar-thumb { background: #d4af37; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #A7CDBF, #52A38D); border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #52A38D, #0F4C3A); background-clip: padding-box; }
+    html.dark ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #d4af37, #b8912e); background-clip: padding-box; }
+
+    /* حلقة تركيز واضحة للتنقّل بلوحة المفاتيح (وصولية) */
+    :focus-visible { outline: 2px solid rgba(15, 76, 58, 0.55); outline-offset: 2px; border-radius: 6px; }
+    html.dark :focus-visible { outline-color: rgba(212, 175, 55, 0.75); }
 
     .card {
       background: #FFFFFF;
       border-radius: 1.5rem;
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      box-shadow: 0 10px 30px -12px rgba(15, 76, 58, 0.06);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+        0 1px 2px -1px rgba(15, 23, 42, 0.05),
+        0 14px 30px -16px rgba(15, 76, 58, 0.16);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
     }
     html.dark .card {
-      background: rgba(26, 26, 26, 0.95);
-      border-color: rgba(212, 175, 55, 0.3);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      background: rgba(24, 24, 24, 0.92);
+      border-color: rgba(212, 175, 55, 0.28);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+        0 12px 34px -16px rgba(0, 0, 0, 0.65);
     }
 
-    .sidebar-item {
-      transition: all 0.2s font-medium;
-      border-radius: 0.875rem;
+    /* ظل مميّز يتفوّق على أدوات الظل المضمّنة (shadow-sm) للحفاظ على عمق موحّد */
+    div.card {
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+        0 1px 2px -1px rgba(15, 23, 42, 0.05),
+        0 14px 30px -16px rgba(15, 76, 58, 0.16);
     }
+    html.dark div.card {
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+        0 12px 34px -16px rgba(0, 0, 0, 0.65);
+    }
+
+    /* رفع لطيف عند المرور — للبطاقات القابلة للنقر (اختياري) */
+    .hover-lift { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease; }
+    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 20px 42px -18px rgba(15, 76, 58, 0.30); border-color: rgba(15, 76, 58, 0.22); }
+    html.dark .hover-lift:hover { box-shadow: 0 22px 46px -18px rgba(0, 0, 0, 0.7); border-color: rgba(212, 175, 55, 0.45); }
+
+    /* شريط لوني صغير قبل عناوين الأقسام */
+    .section-accent { position: relative; padding-right: 0.85rem; }
+    .section-accent::before {
+      content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 4px; height: 1.05em; border-radius: 99px;
+      background: linear-gradient(180deg, #0F4C3A, #52A38D);
+    }
+    html.dark .section-accent::before { background: linear-gradient(180deg, #d4af37, #b8912e); }
+
+    .sidebar-item { transition: all 0.2s ease; border-radius: 0.875rem; }
     .sidebar-item.active {
       background: linear-gradient(135deg, #0F4C3A 0%, #0C4132 100%);
       color: #FFFFFF;
@@ -109,20 +154,22 @@
 
     .table-wrap table { width: 100%; border-collapse: separate; border-spacing: 0; }
     .table-wrap thead th {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #64748B;
       font-weight: 800;
-      padding: 1rem 1.25rem;
+      letter-spacing: 0.03em;
+      padding: 0.95rem 1.25rem;
       text-align: right;
-      background: #F8FAFC;
+      background: linear-gradient(180deg, #F8FAFC, #EEF3F1);
       border-bottom: 1px solid #E2E8F0;
       white-space: nowrap;
     }
     html.dark .table-wrap thead th {
-      background: rgba(0, 0, 0, 0.3);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.28));
       color: #d4af37;
       border-bottom-color: rgba(212, 175, 55, 0.2);
     }
+    .table-wrap tbody tr { transition: background-color 0.15s ease; }
     .table-wrap tbody td {
       padding: 1rem 1.25rem;
       font-size: 0.85rem;
@@ -135,7 +182,7 @@
       border-bottom-color: rgba(255, 255, 255, 0.05);
     }
 
-    .form-input, input[type=text], input[type=password], input[type=date], input[type=number], select, textarea {
+    .form-input, input[type=text], input[type=password], input[type=date], input[type=number], input[type=email], input[type=tel], select, textarea {
       background: #FFFFFF;
       border: 1px solid #CBD5E1;
       border-radius: 0.875rem;
@@ -144,18 +191,31 @@
       outline: none;
       width: 100%;
       color: #0F172A;
-      transition: all 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     }
     html.dark .form-input, html.dark input, html.dark select, html.dark textarea {
       background: #141414;
       border-color: rgba(212, 175, 55, 0.3);
       color: #f3f4f6;
     }
+    .form-input:focus, input:focus, select:focus, textarea:focus {
+      border-color: #0F4C3A;
+      box-shadow: 0 0 0 3px rgba(15, 76, 58, 0.12);
+    }
+    html.dark .form-input:focus, html.dark input:focus, html.dark select:focus, html.dark textarea:focus {
+      border-color: #d4af37;
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.16);
+    }
 
-    .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    .animate-fade-in { animation: fadeIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .animate-fade-in { animation: none; }
     }
   </style>
 
@@ -163,7 +223,7 @@
 </head>
 <body class="bg-slate-50 dark:bg-[#1a1a1a] text-slate-800 dark:text-gray-100 antialiased min-h-screen flex flex-col transition-colors duration-300">
 
-<div class="flex min-h-screen relative overflow-x-hidden">
+<div class="flex min-h-screen relative overflow-x-clip">
 
   {{-- SIDEBAR --}}
   @include('partials.sidebar')
@@ -240,32 +300,10 @@
     }
   });
 
-  const mobileBtn = document.getElementById('mobile-sidebar-toggle') || document.getElementById('mobile-menu-btn');
-  const backdrop = document.getElementById('mobile-sidebar-backdrop');
-
-  if (mobileBtn) {
-    mobileBtn.addEventListener('click', () => {
-      const aside = document.querySelector('aside');
-      if (!aside) return;
-
-      const isOpen = aside.classList.contains('translate-x-0');
-
-      if (!isOpen) {
-        aside.classList.remove('hidden', '-translate-x-full');
-        aside.classList.add('fixed', 'inset-y-0', 'right-0', 'z-40', 'translate-x-0', 'shadow-2xl');
-        backdrop.classList.remove('hidden');
-      } else {
-        aside.classList.add('-translate-x-full');
-        backdrop.classList.add('hidden');
-      }
-    });
-  }
-
-  backdrop?.addEventListener('click', () => {
-    const aside = document.querySelector('aside');
-    aside?.classList.add('-translate-x-full');
-    backdrop.classList.add('hidden');
-  });
+  // القائمة الجانبية للجوال تُدار بالكامل عبر toggleMobileSidebar()/closeMobileSidebar()
+  // في partials/sidebar.blade.php (تعمل على #mobile-sidebar).
+  // أُزيل المعالج القديم الذي كان يتلاعب بالقائمة المكتبية (#main-sidebar) عبر
+  // document.querySelector('aside') فيزيل صنف hidden ويجعلها تظهر فوق المحتوى على الجوال.
 </script>
 
 @stack('scripts')

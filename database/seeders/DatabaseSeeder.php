@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use App\Models\Activity;
 use App\Models\ActivityType;
 use App\Models\Admin;
+use App\Models\Book;
 use App\Models\CulturalCenter;
+use App\Models\Library;
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\VenueType;
@@ -22,6 +24,8 @@ class DatabaseSeeder extends Seeder
         $this->seedCenters();
         $this->seedVenues();
         $this->seedActivities();
+        $this->seedLibraries();
+        $this->seedBooks();
     }
 
     private function seedUsers(): void
@@ -215,5 +219,29 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+    }
+
+    private function seedLibraries(): void
+    {
+        $centers = CulturalCenter::all();
+
+        if ($centers->isEmpty()) {
+            return;
+        }
+
+        foreach ($centers as $center) {
+            Library::firstOrCreate(
+                ['cultural_center_id' => $center->id, 'name' => 'مكتبة ' . $center->name],
+            );
+        }
+    }
+
+    private function seedBooks(): void
+    {
+        if (Library::count() === 0 || Book::count() > 0) {
+            return;
+        }
+
+        Book::factory()->count(10)->create();
     }
 }

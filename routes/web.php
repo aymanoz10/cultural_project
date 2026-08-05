@@ -2,9 +2,15 @@
 
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminNotificationController;
+use App\Http\Controllers\BookController;
 use App\Http\Controllers\CulturalCenterController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LibraryController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TicketScanController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\VenueReservationController;
 use Illuminate\Support\Facades\Route;
 
 // --------------------------------------------------------------------------
@@ -32,19 +38,24 @@ Route::redirect('/', '/login');
 // 2️⃣ مسارات لوحة التحكم المحمية والمقسمة حسب الصلاحيات
 // --------------------------------------------------------------------------
 Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
-    
+
+    // 🔔 إشعارات لوحة التحكم (متاحة لكل المشرفين المسجّلين)
+    Route::get('/notifications',            [AdminNotificationController::class, 'page'])->name('notifications.index');
+    Route::get('/notifications/feed',       [AdminNotificationController::class, 'feed'])->name('notifications.feed');
+    Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all',  [AdminNotificationController::class, 'markAllRead'])->name('notifications.readAll');
+
     // 🎫 1. مسارات مسؤول التذاكر (TicketsAdmin)
     Route::middleware(['admin.role:super,admin,ticketsAdmin'])->group(function () {
         Route::view('/barcode/scan', 'admin.barcode.scan')->name('barcode.scan');
+        Route::post('/barcode/verify', [TicketScanController::class, 'verify'])->name('barcode.verify');
     });
 
     // 🛡️ 2. مسارات المشرف العام والأدمن (Super & Admin)
     Route::middleware(['admin.role:super,admin'])->group(function () {
         
         // اللوحة الرئيسية
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'web'])->name('dashboard');
 
         // الملف الشخصي
         Route::get('/profile', [AdminAuthController::class, 'profile'])->name('profile');
@@ -77,8 +88,32 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::put('/venues/{id}', [VenueController::class, 'update'])->name('venues.update');
         Route::delete('/venues/{id}', [VenueController::class, 'destroy'])->name('venues.destroy');
 
-        // قسم المكتبات والكتب
-        Route::get('/libraries', [LibraryController::class, 'index'])->name('libraries.index');
+        // 📖 قسم المكتبات (CRUD كامل عبر AJAX / JSON — واجهة إدارة)
+        Route::get('/libraries',            [LibraryController::class, 'webIndex'])->name('libraries.index');
+        Route::get('/libraries/create',     [LibraryController::class, 'create'])->name('libraries.create');
+        Route::post('/libraries',           [LibraryController::class, 'store'])->name('libraries.store');
+        Route::get('/libraries/{id}',       [LibraryController::class, 'show'])->name('libraries.show');
+        Route::get('/libraries/{id}/edit',  [LibraryController::class, 'editView'])->name('libraries.edit');
+        Route::put('/libraries/{id}',       [LibraryController::class, 'update'])->name('libraries.update');
+        Route::delete('/libraries/{id}',    [LibraryController::class, 'destroy'])->name('libraries.destroy');
+
+        // 📚 قسم الكتب (CRUD كامل عبر AJAX / JSON)
+        Route::get('/books',            [BookController::class, 'index'])->name('books.index');
+        Route::get('/books/create',     [BookController::class, 'create'])->name('books.create');
+        Route::post('/books',           [BookController::class, 'store'])->name('books.store');
+        Route::get('/books/{id}',       [BookController::class, 'show'])->name('books.show');
+        Route::get('/books/{id}/edit',  [BookController::class, 'editView'])->name('books.edit');
+        Route::put('/books/{id}',       [BookController::class, 'update'])->name('books.update');
+        Route::delete('/books/{id}',    [BookController::class, 'destroy'])->name('books.destroy');
+
+        // 🗓️ قسم حجوزات القاعات (إدارة آلة الحالات)
+        Route::get('/venue-reservations',             [VenueReservationController::class, 'webIndex'])->name('venue_reservations.index');
+        Route::get('/venue-reservations/{id}',        [VenueReservationController::class, 'showWeb'])->name('venue_reservations.show');
+        Route::put('/venue-reservations/{id}/status', [VenueReservationController::class, 'updateStatus'])->name('venue_reservations.status');
+
+        // 📊 قسم التقارير وتصدير البيانات (super = كل المراكز، admin = مركزه فقط)
+        Route::get('/reports',        [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
 
     // 👑 3. مسارات المشرف العام فقط (Super Admin) - إدارة المستخدمين والصلاحيات

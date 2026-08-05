@@ -2,12 +2,67 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin;
+use App\Models\Venue;
 use App\Models\VenueReservation;
 use App\Http\Resources\VenueReservationResource;
+use App\Notifications\NewVenueReservation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class VenueReservationController extends Controller
 {
+    /**
+     * عرض قائمة حجوزات القاعات (واجهة إدارة)
+     */
+    public function webIndex(Request $request)
+    {
+        $query = VenueReservation::with('venue')->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('venue_id')) {
+            $query->where('venue_id', $request->venue_id);
+        }
+
+        if ($request->filled('search')) {
+            $term = "%{$request->search}%";
+            $query->where(function ($q) use ($term) {
+                $q->where('applicant_name', 'ilike', $term)
+                  ->orWhere('requesting_party', 'ilike', $term)
+                  ->orWhere('national_id_number', 'ilike', $term);
+            });
+        }
+
+        $reservations = $query->paginate(12)->withQueryString();
+
+        $counts = VenueReservation::selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
+        $stats = [
+            'total'     => VenueReservation::count(),
+            'pending'   => (int) ($counts[VenueReservation::STATUS_PENDING]   ?? 0),
+            'accepted'  => (int) ($counts[VenueReservation::STATUS_ACCEPTED]  ?? 0),
+            'approved'  => (int) ($counts[VenueReservation::STATUS_APPROVED]  ?? 0),
+            'rejected'  => (int) ($counts[VenueReservation::STATUS_REJECTED]  ?? 0),
+            'cancelled' => (int) ($counts[VenueReservation::STATUS_CANCELLED] ?? 0),
+        ];
+
+        $venues = Venue::all();
+
+        return view('admin.venue_reservations.index', compact('reservations', 'stats', 'venues'));
+    }
+
+    /**
+     * عرض تفاصيل حجز قاعة واحد (واجهة إدارة)
+     */
+    public function showWeb($id)
+    {
+        $reservation = VenueReservation::with(['venue.culturalCenter', 'user'])->findOrFail($id);
+
+        return view('admin.venue_reservations.show', compact('reservation'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -42,11 +97,33 @@ class VenueReservationController extends Controller
             'status'             => VenueReservation::STATUS_PENDING,
         ]);
 
+        // إشعار لوحة التحكم: المشرف العام + مشرف مركز القاعة
+        $this->notifyAdminsOfNewReservation($reservation->load('venue'));
+
         return response()->json([
             'success' => true,
             'message' => 'تم إرسال طلب الحجز بنجاح',
-            'data'    => new VenueReservationResource($reservation->load('venue')),
+            'data'    => new VenueReservationResource($reservation),
         ], 201);
+    }
+
+    /**
+     * إشعار المشرفين المعنيين بطلب حجز قاعة جديد (super + مشرف المركز).
+     */
+    private function notifyAdminsOfNewReservation(VenueReservation $reservation): void
+    {
+        $centerId = $reservation->venue?->cultural_center_id;
+
+        $admins = Admin::query()
+            ->where('role', 'super')
+            ->when($centerId, function ($q) use ($centerId) {
+                $q->orWhere(fn ($sub) => $sub->where('role', 'admin')->where('center_id', $centerId));
+            })
+            ->get();
+
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new NewVenueReservation($reservation));
+        }
     }
 
     public function index(Request $request)
@@ -81,14 +158,7 @@ class VenueReservationController extends Controller
 
         $reservation = VenueReservation::findOrFail($id);
 
-        $allowed = match ($reservation->status) {
-            VenueReservation::STATUS_PENDING  => [VenueReservation::STATUS_ACCEPTED, VenueReservation::STATUS_REJECTED],
-            VenueReservation::STATUS_ACCEPTED => [VenueReservation::STATUS_APPROVED, VenueReservation::STATUS_REJECTED, VenueReservation::STATUS_CANCELLED],
-            VenueReservation::STATUS_APPROVED => [VenueReservation::STATUS_CANCELLED],
-            default => [],
-        };
-
-        if (! in_array($request->status, $allowed)) {
+        if (! in_array($request->status, $reservation->allowedTransitions(), true)) {
             return response()->json([
                 'message' => 'لا يمكن تغيير الحالة من "' . $reservation->status . '" إلى "' . $request->status . '"',
             ], 422);

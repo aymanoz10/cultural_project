@@ -54,11 +54,7 @@ class CulturalCenterController extends Controller
 
    public function create()
     {
-        // جلب جميع المراكز الثقافية من قاعدة البيانات
-        $culturalCenters = CulturalCenter::all(); 
-
-        // تمرير المتغير إلى واجهة Blade
-        return view('admin.halls.create', compact('culturalCenters'));
+        return view('admin.cultural_centers.create');
     }
 
     public function editView($id)
