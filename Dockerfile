@@ -1,5 +1,4 @@
-FROM php:8.2-fpm
-
+FROM php:8.4-cli
 # تثبيت الحزم وإضافات PHP المطلوبة
 RUN apt-get update && apt-get install -y \
     git unzip libpng-dev libonig-dev libxml2-dev libpq-dev \
@@ -17,4 +16,4 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 EXPOSE 8000
-CMD php artisan serve --host=0.0.0.0 --port=8000
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
