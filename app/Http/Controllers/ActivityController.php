@@ -212,11 +212,10 @@ class ActivityController extends Controller
         return ActivityResource::collection($activities);
     }
 
- public function coming(Request $request)
+   public function coming(Request $request)
 {
-    // إضافة شرط أن يكون وقت البداية أكبر من أو يساوي الوقت الحالي
     $query = Activity::with(['culturalCenter', 'venue', 'activityType'])
-        ->where('start_time', '>=', now());
+        ->where('start_time', '>', now());
 
     if ($request->filled('search')) {
         $query->where(function ($q) use ($request) {
@@ -240,9 +239,10 @@ class ActivityController extends Controller
 
     $perPage = max(1, min($request->integer('per_page', 10), 100));
 
-    // ترتيب تصاعدي (asc) لتظهر الفعالية الأقرب حدوثاً أولاً
+    // الترتيب تصاعدي حسب start_time (من الأقرب تاريخاً إلى الأبعد)
     $activities = $query->orderBy('start_time', 'asc')->paginate($perPage);
 
+    // ارجاع الـ Response حسب نوع الطلب مثل index
     if ($request->wantsJson()) {
         return ActivityResource::collection($activities);
     }
@@ -254,6 +254,7 @@ class ActivityController extends Controller
         'centers' => $centers,
     ]);
 }
+
     private function hasConflict(string $startTime, string $endTime, ?int $venueId, ?int $excludeId = null): bool
     {
         if (! $venueId) {
