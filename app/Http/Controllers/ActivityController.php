@@ -212,16 +212,48 @@ class ActivityController extends Controller
         return ActivityResource::collection($activities);
     }
 
-    public function coming(Request $request)
-    {
-        $perPage = max(1, min($request->integer('per_page', 10), 100));
-        $activities = Activity::where('start_time', '>', now())
-            ->orderBy('start_time', 'asc')
-            ->paginate($perPage);
+ public function coming(Request $request)
+{
+    // إضافة شرط أن يكون وقت البداية أكبر من أو يساوي الوقت الحالي
+    $query = Activity::with(['culturalCenter', 'venue', 'activityType'])
+        ->where('start_time', '>=', now());
 
+    if ($request->filled('search')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('title', 'like', "%{$request->search}%")
+              ->orWhere('description', 'like', "%{$request->search}%")
+              ->orWhere('presenter_name', 'like', "%{$request->search}%");
+        });
+    }
+
+    if ($request->filled('center_id')) {
+        $query->where('cultural_center_id', $request->center_id);
+    }
+
+    if ($request->filled('activity_type_id')) {
+        $query->where('activity_type_id', $request->activity_type_id);
+    }
+
+    if ($request->filled('id')) {
+        $query->where('id', $request->id);
+    }
+
+    $perPage = max(1, min($request->integer('per_page', 10), 100));
+
+    // ترتيب تصاعدي (asc) لتظهر الفعالية الأقرب حدوثاً أولاً
+    $activities = $query->orderBy('start_time', 'asc')->paginate($perPage);
+
+    if ($request->wantsJson()) {
         return ActivityResource::collection($activities);
     }
 
+    $centers = CulturalCenter::all();
+
+    return view('admin.events.index', [
+        'events'  => $activities,
+        'centers' => $centers,
+    ]);
+}
     private function hasConflict(string $startTime, string $endTime, ?int $venueId, ?int $excludeId = null): bool
     {
         if (! $venueId) {
