@@ -23,6 +23,8 @@ use App\Http\Controllers\{
     AiAssistantController,
     AiComparisonController,
     AiRecommendationController,
+    BookController,
+    BookFileController,
     DemoNotificationController,
     TicketScanController,
 };
@@ -49,7 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-
+     Route::get('/profile', [AdminAuthController::class, 'profile']);
+     Route::post('/profile/update', [AdminAuthController::class, 'update']);
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
@@ -216,3 +219,9 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/ai/compare', [AiComparisonController::class, 'compare']);
+Route::prefix('books')->group(function () {
+    Route::get('/', [BookController::class, 'index']);         // عرض الكتب مع الفلترة
+    Route::get('/{id}', [BookController::class, 'show']);      // عرض تفاصيل كتاب
+    Route::get('/{book}/read', [BookFileController::class, 'read']); // قراءة الكتاب inline
+    Route::get('/{book}/download', [BookFileController::class, 'download']); // تنزيل الكتاب
+});

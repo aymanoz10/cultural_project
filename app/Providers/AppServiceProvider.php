@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (request()->hasHeader('x-forwarded-proto')) {
+        URL::forceScheme('https');
+    }
         // خطوة صفر: تفعيل مراقبة وتسجيل الاستعلامات البطيئة (> 100ms) كخط أساس للقياس
         DB::listen(function ($query) {
             if ($query->time > 100) {

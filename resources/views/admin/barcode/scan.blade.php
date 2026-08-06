@@ -17,7 +17,19 @@
         <svg class="w-5 h-5 text-forest dark:text-[#d4af37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         مسح بالكاميرا المباشرة
       </h3>
-      <div id="reader" class="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10"></div>
+
+      {{-- زر تشغيل الكاميرا --}}
+      <button type="button" id="start-cam-btn" class="w-full mb-4 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        تشغيل / سماح الكاميرا
+      </button>
+
+      {{-- مكان عرض حالة الكاميرا --}}
+      <div id="cam-status" class="text-[11px] text-slate-500 text-center mb-2 hidden"></div>
+
+      <div id="reader" class="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 min-h-[250px] bg-slate-100 dark:bg-black/20 flex items-center justify-center">
+        <span class="text-xs text-slate-400">اضغط زر تشغيل الكاميرا أعلاه</span>
+      </div>
     </div>
 
     {{-- إدخال يدوي --}}
@@ -28,8 +40,8 @@
       <form id="barcodeForm" class="space-y-4">
         <div>
           <label for="barcode" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">كود الباركود / رقم التذكرة</label>
-          <textarea id="barcode" name="barcode" rows="3" autofocus placeholder="امسح الباركود أو ألصق الكود هنا..."
-                    class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111412] text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-forest dark:focus:ring-[#d4af37]"></textarea>
+          <input type="text" id="barcode" name="barcode" autofocus autocomplete="off" placeholder="امسح الباركود أو ألصق الكود هنا..."
+                 class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111412] text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-forest dark:focus:ring-[#d4af37]">
         </div>
         <button type="submit" id="verify-btn" class="w-full py-3 px-4 bg-forest hover:bg-forest-600 text-white font-black rounded-xl shadow-sm transition-all">
           التحقّق وتسجيل الحضور
@@ -50,7 +62,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+{{-- تغيير السيرفر لضمان تحميل المكتبة بدون مشاكل شبكة --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('barcode');
@@ -60,8 +73,12 @@
     const icon = document.getElementById('result-icon');
     const msg = document.getElementById('result-message');
     const details = document.getElementById('result-details');
+    const camBtn = document.getElementById('start-cam-btn');
+    const camStatus = document.getElementById('cam-status');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+    
     let locked = false;
+    let html5QrCode = null;
 
     const ICONS = {
       ok: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -114,30 +131,93 @@
     async function verifyCode(code) {
       code = (code || '').trim();
       if (!code || locked) return;
+      
       locked = true;
+
+      if (html5QrCode && html5QrCode.isScanning) {
+        try { await html5QrCode.pause(true); } catch(e) {}
+      }
+
       try {
         const res = await fetch("{{ route('admin.barcode.verify', [], false) }}", {
           method: 'POST',
-          headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          headers: { 
+            'X-CSRF-TOKEN': csrf, 
+            'Accept': 'application/json', 
+            'Content-Type': 'application/json' 
+          },
           body: JSON.stringify({ code })
         });
-        renderResult(await res.json());
+
+        const data = await res.json();
+        renderResult(data);
       } catch (e) {
         renderResult({ success: false, result: 'error', message: 'حدث خطأ في الاتصال بالخادم' });
+      } finally {
+        setTimeout(async () => { 
+          input.value = '';
+          input.focus();
+          locked = false; 
+          if (html5QrCode && html5QrCode.isScanning) {
+            try { html5QrCode.resume(); } catch(e) {}
+          }
+        }, 3000);
       }
-      setTimeout(() => { locked = false; }, 2500);
     }
 
-    form.addEventListener('submit', (e) => { e.preventDefault(); verifyCode(input.value); });
+    form.addEventListener('submit', (e) => { 
+      e.preventDefault(); 
+      verifyCode(input.value); 
+    });
 
-    // الماسح الضوئي
-    try {
-      const scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-      scanner.render((decodedText) => {
-        input.value = decodedText;
-        verifyCode(decodedText); // تحقّق تلقائي عند المسح
-      }, () => {});
-    } catch (e) {}
+    // تشغيل الكاميرا عند الضغط على الزر
+    camBtn.addEventListener('click', async function () {
+      if (typeof Html5Qrcode === 'undefined') {
+        alert("فشل تحميل مكتبة الكاميرا. تحقّق من اتصال الإنترنت.");
+        return;
+      }
+
+      camStatus.classList.remove('hidden');
+      camStatus.textContent = "جاري طلب إذن الكاميرا...";
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+      try {
+        // تجربة الكاميرا الخلفية أولاً
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          (decodedText) => {
+            input.value = decodedText;
+            verifyCode(decodedText);
+          }
+        );
+        camStatus.textContent = "الكاميرا تعمل بنجاح ✓";
+        camBtn.classList.add('hidden'); // إخفاء الزر بعد التشغيل
+      } catch (err) {
+        console.warn("فشل الكاميرا الخلفية، جاري التجربة بالكاميرا الافتراضية...", err);
+        try {
+          // تجربة أي كاميرا متوفرة (مثل كاميرا اللابتوب)
+          await html5QrCode.start(
+            { facingMode: "user" },
+            config,
+            (decodedText) => {
+              input.value = decodedText;
+              verifyCode(decodedText);
+            }
+          );
+          camStatus.textContent = "الكاميرا تعمل بنجاح ✓";
+          camBtn.classList.add('hidden');
+        } catch (err2) {
+          camStatus.textContent = "تعذر تشغيل الكاميرا: " + err2;
+          alert("خطأ الكاميرا: " + err2 + "\nتأكد من إعطاء الصلاحية في المتصفح ومن استخدام رابط HTTPS مشفّر.");
+        }
+      }
+    });
   });
 </script>
-@endpush
+@endpush  
