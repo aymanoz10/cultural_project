@@ -142,3 +142,4 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations.index');
     Route::post('/reservations/{id}/cancel', [AdminReservationController::class, 'cancel'])->name('reservations.cancel');
 });
+Route::post('/tickets/verify', [TicketScanController::class, 'verify']);

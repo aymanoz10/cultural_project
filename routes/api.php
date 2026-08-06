@@ -24,6 +24,7 @@ use App\Http\Controllers\{
     AiComparisonController,
     AiRecommendationController,
     DemoNotificationController,
+    TicketScanController,
 };
 use Illuminate\Http\Request;
 
@@ -79,6 +80,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [SuggestionController::class, 'edit']);
         Route::delete('/{id}', [SuggestionController::class, 'remove']);
     });
+    Route::post('/tickets/verify', [TicketScanController::class, 'verify']);
+    Route::post('/reservations', [ReservationController::class, 'store']);
+    Route::get('/my-tickets', [ReservationController::class, 'myTickets']);
+    Route::get('/tickets/{ticket_id}', [ReservationController::class, 'show']);
+    Route::post('/tickets/{ticket_id}/cancel', [ReservationController::class, 'cancel']);
 });
 
 Route::post('/volunteerings', [VolunteeringController::class, 'add']);
