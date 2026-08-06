@@ -143,8 +143,8 @@
       <div class="w-9 h-9 rounded-xl bg-forest dark:bg-[#d4af37] flex items-center justify-center text-white dark:text-[#1a1a1a] font-black">ث</div>
       <h1 class="font-extrabold text-slate-800 dark:text-[#d4af37]">منظومة الثقافة</h1>
     </div>
-    <button onclick="closeMobileSidebar()" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    <button onclick="closeMobileSidebar()" aria-label="إغلاق القائمة" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+      <svg class="w-5 h-5" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
   </div>
   

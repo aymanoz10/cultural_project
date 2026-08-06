@@ -114,7 +114,7 @@
 
         <div>
           <span class="text-xs font-bold text-slate-400 block">المحاضر / المنظم</span>
-          <span class="text-sm font-extrabold text-slate-800">{{ $activity->host_name ?? 'غير محدد' }}</span>
+          <span class="text-sm font-extrabold text-slate-800">{{ $activity->presenter_name ?? 'غير محدد' }}</span>
         </div>
 
         <div>

@@ -43,6 +43,14 @@ return [
             'throw' => false,
         ],
 
+        // قرص خاص لملفات الكتب (PDF): لا رابط عام ولا symlink — يُقدَّم عبر BookFileController فقط
+        'books_private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/books'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

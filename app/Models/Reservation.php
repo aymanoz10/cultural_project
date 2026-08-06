@@ -42,16 +42,21 @@ class Reservation extends Model
     {
         static::creating(function (Reservation $reservation) {
             if (! $reservation->ticket_id) {
-                $reservation->ticket_id = 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
+                $reservation->ticket_id = static::generateTicketId();
             }
-        });
 
-        static::created(function (Reservation $reservation) {
+            // تُولَّد الحمولة المشفّرة ضمن نفس عملية الـINSERT — فلا كتابة ثانية.
+            // (سابقاً: حدث created يستدعي saveQuietly() = UPDATE إضافي داخل نافذة قفل الفعالية)
             if (empty($reservation->qr_payload)) {
                 $reservation->qr_payload = $reservation->generateQrPayload();
-                $reservation->saveQuietly();
             }
         });
+    }
+
+    /** توليد معرّف تذكرة فريد — مصدر وحيد يمنع تكرار المنطق في المتحكّم. */
+    public static function generateTicketId(): string
+    {
+        return 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
     }
 
     /**

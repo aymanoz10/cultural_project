@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\ActivityType;
 use App\Models\CulturalCenter;
 use App\Models\Venue;
 use App\Http\Resources\ActivityResource;

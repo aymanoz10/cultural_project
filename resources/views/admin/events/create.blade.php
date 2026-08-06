@@ -64,8 +64,8 @@
     <!-- اسم المحاضر / المنظم -->
     <div>
       <label class="text-xs font-bold text-slate-500 mb-1 block">اسم المحاضر / المنظم</label>
-      <input type="text" name="host_name" value="{{ old('host_name') }}" placeholder="مثال: د. أحمد خالد">
-      @error('host_name') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
+      <input type="text" name="presenter_name" value="{{ old('presenter_name') }}" placeholder="مثال: د. أحمد خالد">
+      @error('presenter_name') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
     </div>
 
     <!-- التوقيت والتاريخ (تنسيق start_time و end_time المطابق للـ Validation) -->

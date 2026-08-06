@@ -1,11 +1,40 @@
 @import 'tailwindcss';
 
+/* الوضع الداكن يعتمد على وجود class="dark" على <html> (لا على تفضيل نظام التشغيل) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* الخطوط — مستضافة محلياً عبر @fontsource في resources/js/app.js */
+    --font-sans: 'Cairo', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
+    --font-cairo: 'Cairo', sans-serif;
+    --font-tajawal: 'Tajawal', sans-serif;
+
+    /* لوحة forest (منقولة من tailwind.config المضمّن سابقاً) */
+    --color-forest: #0F4C3A;
+    --color-forest-light: #115E3B;
+    --color-forest-50: #F2F8F5;
+    --color-forest-100: #E1EFEA;
+    --color-forest-200: #C3DFD5;
+    --color-forest-300: #94C7B7;
+    --color-forest-400: #52A38D;
+    --color-forest-500: #0F4C3A;
+    --color-forest-600: #0C4132;
+    --color-forest-700: #093428;
+    --color-forest-800: #07271E;
+    --color-forest-900: #041712;
+
+    /* ظلال ناعمة */
+    --shadow-soft-xs: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+    --shadow-soft-md: 0 10px 30px -10px rgba(15, 76, 58, 0.08), 0 4px 12px -4px rgba(15, 23, 42, 0.03);
+    --shadow-soft-lg: 0 20px 40px -15px rgba(15, 76, 58, 0.12);
+    --shadow-glass: 0 8px 32px 0 rgba(15, 76, 58, 0.05);
+
+    /* زوايا مخصّصة */
+    --radius-2xl: 1.25rem;
+    --radius-3xl: 1.75rem;
 }

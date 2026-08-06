@@ -14,50 +14,15 @@
     }
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  {{-- SEO — الصفحات محميّة بتسجيل الدخول (يُوجَّه الزاحف لصفحة الدخول)، فلا حاجة لـnoindex الذي يُسقط تقييم SEO --}}
+  <meta name="description" content="@yield('meta_description', 'لوحة تحكم منظومة الثقافة — إدارة المراكز الثقافية والفعاليات وحجوزات القاعات والمكتبات.')">
+  <meta name="theme-color" content="#0F4C3A">
 
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            forest: {
-              DEFAULT: '#0F4C3A',
-              50: '#F2F8F5',
-              100: '#E1EFEA',
-              200: '#C3DFD5',
-              300: '#94C7B7',
-              400: '#52A38D',
-              500: '#0F4C3A',
-              600: '#0C4132',
-              700: '#093428',
-              800: '#07271E',
-              900: '#041712',
-            },
-          },
-          fontFamily: {
-            cairo: ['Cairo', 'sans-serif'],
-            tajawal: ['Tajawal', 'sans-serif'],
-          },
-          boxShadow: {
-            'soft-xs': '0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02)',
-            'soft-md': '0 10px 30px -10px rgba(15, 76, 58, 0.08), 0 4px 12px -4px rgba(15, 23, 42, 0.03)',
-            'soft-lg': '0 20px 40px -15px rgba(15, 76, 58, 0.12)',
-            'glass': '0 8px 32px 0 rgba(15, 76, 58, 0.05)',
-          },
-          borderRadius: {
-            '2xl': '1.25rem',
-            '3xl': '1.75rem',
-          }
-        }
-      }
-    }
-  </script>
+  {{-- الأصول المبنية عبر Vite (CSS مصغّر + خطوط مستضافة محلياً) بدل Play CDN --}}
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
+  
+  {{-- الخطوط (Cairo/Tajawal) وإعدادات Tailwind (الألوان/الظلال/الزوايا) انتقلت إلى
+       resources/css/app.css عبر @theme و@fontsource — لا حاجة لخطوط Google الخارجية. --}}
 
   <style>
     html { scroll-behavior: smooth; }
@@ -223,6 +188,8 @@
 </head>
 <body class="bg-slate-50 dark:bg-[#1a1a1a] text-slate-800 dark:text-gray-100 antialiased min-h-screen flex flex-col transition-colors duration-300">
 
+<a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-[200] bg-forest text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">تخطَّ إلى المحتوى الرئيسي</a>
+
 <div class="flex min-h-screen relative overflow-x-clip">
 
   {{-- SIDEBAR --}}
@@ -238,7 +205,7 @@
     @include('partials.navbar')
 
     {{-- PAGE CONTENT --}}
-    <div class="flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] w-full mx-auto animate-fade-in">
+    <div id="main-content" class="flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] w-full mx-auto animate-fade-in">
       
       <div class="flex items-center justify-between gap-4">
         <div></div>

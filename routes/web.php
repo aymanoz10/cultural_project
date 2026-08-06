@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\BookFileController;
 use App\Http\Controllers\CulturalCenterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LibraryController;
@@ -105,6 +106,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/books/{id}/edit',  [BookController::class, 'editView'])->name('books.edit');
         Route::put('/books/{id}',       [BookController::class, 'update'])->name('books.update');
         Route::delete('/books/{id}',    [BookController::class, 'destroy'])->name('books.destroy');
+
+        // 📄 ملف الكتاب (PDF): قراءة داخل المتصفح / تحميل — يُقدَّم من قرص خاص عبر متحكّم
+        Route::get('/books/{book}/read',     [BookFileController::class, 'read'])->name('books.read');
+        Route::get('/books/{book}/download', [BookFileController::class, 'download'])->name('books.download');
 
         // 🗓️ قسم حجوزات القاعات (إدارة آلة الحالات)
         Route::get('/venue-reservations',             [VenueReservationController::class, 'webIndex'])->name('venue_reservations.index');

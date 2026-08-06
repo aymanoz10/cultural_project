@@ -32,7 +32,43 @@ class BookController extends Controller
             'cover_image.image'   => 'صورة الغلاف يجب أن تكون صورة صالحة.',
             'cover_image.mimes'   => 'صيغة صورة الغلاف يجب أن تكون jpeg أو png أو jpg أو webp.',
             'cover_image.max'     => 'حجم صورة الغلاف يجب ألا يتجاوز 2 ميجابايت.',
+            'file.mimetypes'      => 'ملف الكتاب يجب أن يكون بصيغة PDF.',
+            'file.mimes'          => 'ملف الكتاب يجب أن يكون بصيغة PDF.',
+            'file.max'            => 'حجم ملف الكتاب يجب ألا يتجاوز 50 ميجابايت.',
         ];
+    }
+
+    /**
+     * يخزّن ملف PDF على القرص الخاص ويعيد أعمدة الملف المحسوبة (لا مكتوبة يدوياً).
+     */
+    private function storePdf(\Illuminate\Http\UploadedFile $file): array
+    {
+        // يُحسب قبل النقل: getRealPath صالح فقط قبل store()
+        $bytes = $file->getSize();
+        $hash  = hash_file('sha256', $file->getRealPath());
+
+        return [
+            'file_path'       => $file->store('', 'books_private'),
+            'file_disk'       => 'books_private',
+            'original_name'   => $file->getClientOriginalName(),
+            'mime_type'       => 'application/pdf',
+            'file_size_bytes' => $bytes,
+            'sha256'          => $hash,
+            'file_size'       => $this->formatBytes($bytes), // يملأ الحقل النصّي القديم تلقائياً
+        ];
+    }
+
+    /** تنسيق الحجم بالبايت إلى نص عربي مقروء */
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return '0 بايت';
+        }
+        $units = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت'];
+        $i = (int) floor(log($bytes, 1024));
+        $i = min($i, count($units) - 1);
+
+        return round($bytes / (1024 ** $i), 2) . ' ' . $units[$i];
     }
 
     /**
@@ -98,6 +134,7 @@ class BookController extends Controller
             'pages_count' => 'nullable|integer|min:1',
             'file_size'   => 'nullable|string|max:50',
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'file'        => 'nullable|file|mimetypes:application/pdf|mimes:pdf|max:51200',
             'is_available' => 'boolean',
         ], $this->messages());
 
@@ -106,6 +143,11 @@ class BookController extends Controller
         if ($request->hasFile('cover_image')) {
             $validated['cover_image'] = $request->file('cover_image')->store('books', 'public');
         }
+
+        if ($request->hasFile('file')) {
+            $validated = array_merge($validated, $this->storePdf($request->file('file')));
+        }
+        unset($validated['file']);
 
         $book = Book::create($validated);
         $book->load('library');
@@ -155,6 +197,7 @@ class BookController extends Controller
             'pages_count' => 'nullable|integer|min:1',
             'file_size'   => 'nullable|string|max:50',
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'file'        => 'nullable|file|mimetypes:application/pdf|mimes:pdf|max:51200',
             'is_available' => 'boolean',
         ], $this->messages());
 
@@ -166,6 +209,14 @@ class BookController extends Controller
             }
             $validated['cover_image'] = $request->file('cover_image')->store('books', 'public');
         }
+
+        if ($request->hasFile('file')) {
+            if ($book->file_path) {
+                Storage::disk($book->file_disk)->delete($book->file_path);
+            }
+            $validated = array_merge($validated, $this->storePdf($request->file('file')));
+        }
+        unset($validated['file']);
 
         $book->update($validated);
         $book->load('library');
@@ -186,6 +237,10 @@ class BookController extends Controller
 
         if ($book->cover_image) {
             Storage::disk('public')->delete($book->cover_image);
+        }
+
+        if ($book->file_path) {
+            Storage::disk($book->file_disk)->delete($book->file_path);
         }
 
         $book->delete();
