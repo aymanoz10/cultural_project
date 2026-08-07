@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
 
 # جلب Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
+# force rebuild trigger
 WORKDIR /var/www
 
 # نسخ ملفات المشروع
