@@ -74,43 +74,42 @@ class BookController extends Controller
     /**
      * عرض قائمة الكتب مع الفلترة والتصفح
      */
-    public function index(Request $request)
-    {
-        $query = Book::with('library')->latest();
+  public function index(Request $request)
+{
+    $query = Book::with('library')->latest();
 
-        // البحث في العنوان أو المؤلف أو التصنيف (غير حساس لحالة الأحرف — PostgreSQL ilike)
-        if ($request->filled('search')) {
-            $term = "%{$request->search}%";
-            $query->where(function ($q) use ($term) {
-                $q->where('title', 'ilike', $term)
-                  ->orWhere('author', 'ilike', $term)
-                  ->orWhere('category', 'ilike', $term);
-            });
-        }
-
-        // الفلترة حسب التصنيف
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-
-        // الفلترة حسب المكتبة
-        if ($request->filled('library_id')) {
-            $query->where('library_id', $request->library_id);
-        }
-
-        $books = $query->paginate(12)->withQueryString();
-
-        $categories = Book::query()
-            ->select('category')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
-
-        $libraries = Library::all();
-
-        return view('admin.books.index', compact('books', 'categories', 'libraries'));
+    if ($request->filled('search')) {
+        $term = "%{$request->search}%";
+        $query->where(function ($q) use ($term) {
+            $q->where('title', 'ilike', $term)
+              ->orWhere('author', 'ilike', $term)
+              ->orWhere('category', 'ilike', $term);
+        });
     }
 
+    if ($request->filled('category')) {
+        $query->where('category', $request->category);
+    }
+
+    if ($request->filled('library_id')) {
+        $query->where('library_id', $request->library_id);
+    }
+
+    $books = $query->paginate(12)->withQueryString();
+    
+    // إذا كان الطلب يتوقع JSON (مثل طلبات الموبايل أو AJAX)
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'data'    => $books, // سيرجع بيانات الكتب مع تفاصيل الـ Pagination
+        ]);
+    }
+
+    $categories = Book::query()->select('category')->distinct()->orderBy('category')->pluck('category');
+    $libraries = Library::all();
+
+    return view('admin.books.index', compact('books', 'categories', 'libraries'));
+}
     /**
      * عرض صفحة إضافة كتاب جديد
      */
@@ -162,13 +161,20 @@ class BookController extends Controller
     /**
      * عرض بيانات كتاب واحد (واجهة قراءة فقط)
      */
-    public function show($id)
-    {
-        $book = Book::with('library')->findOrFail($id);
+  public function show(Request $request, $id)
+{
+    $book = Book::with('library')->findOrFail($id);
 
-        return view('admin.books.show', compact('book'));
+    // إذا كان الطلب يتوقع JSON
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'data'    => $book,
+        ]);
     }
 
+    return view('admin.books.show', compact('book'));
+}
     /**
      * عرض صفحة تعديل كتاب
      */
