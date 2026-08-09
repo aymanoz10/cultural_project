@@ -112,17 +112,17 @@ class ReservationController extends Controller
                 $waitlistCount  = $requestedSeats - $availableSeats;
 
                 // حجز المقاعد المتاحة
-                $confirmedRes = $this->makeReservationRecord($userId, $request, $confirmedCount, Reservation::STATUS_CONFIRMED);
-                ReservationCreated::dispatch($confirmedRes->load(['activity', 'user']));
+                $confirmedRes = $this->makeReservationRecord($activity, $request->user(), $request, $confirmedCount, Reservation::STATUS_CONFIRMED);
+                ReservationCreated::dispatch($confirmedRes->loadMissing(['activity', 'user']));
 
                 // إضافة المتبقي للانتظار
-                $waitlistRes = $this->makeReservationRecord($userId, $request, $waitlistCount, Reservation::STATUS_WAIT_LIST);
-                ReservationCreated::dispatch($waitlistRes->load(['activity', 'user']));
+                $waitlistRes = $this->makeReservationRecord($activity, $request->user(), $request, $waitlistCount, Reservation::STATUS_WAIT_LIST);
+                ReservationCreated::dispatch($waitlistRes->loadMissing(['activity', 'user']));
 
                 return [
                     'is_split'  => true,
-                    'confirmed' => $confirmedRes->load(['activity', 'venue']),
-                    'wait_list' => $waitlistRes->load(['activity', 'venue']),
+                    'confirmed' => $confirmedRes->loadMissing(['activity', 'venue']),
+                    'wait_list' => $waitlistRes->loadMissing(['activity', 'venue']),
                     'message'   => "تم تأكيد {$confirmedCount} مقاعد، وإضافة {$waitlistCount} مقعد إلى قائمة الانتظار",
                 ];
             }
@@ -132,12 +132,12 @@ class ReservationController extends Controller
                 ? Reservation::STATUS_CONFIRMED
                 : Reservation::STATUS_WAIT_LIST;
 
-            $reservation = $this->makeReservationRecord($userId, $request, $requestedSeats, $status);
-            ReservationCreated::dispatch($reservation->load(['activity', 'user']));
+            $reservation = $this->makeReservationRecord($activity, $request->user(), $request, $requestedSeats, $status);
+            ReservationCreated::dispatch($reservation->loadMissing(['activity', 'user']));
 
             return [
                 'is_split'    => false,
-                'reservation' => $reservation->load(['activity', 'venue']),
+                'reservation' => $reservation->loadMissing(['activity', 'venue']),
                 'status'      => $status,
             ];
         });
@@ -261,21 +261,26 @@ class ReservationController extends Controller
     /**
      * دالة مساعدة لإنشاء سجل الحجز وتوليد Ticket ID و QR Payload
      */
-    private function makeReservationRecord(int $userId, Request $request, int $seatsCount, string $status): Reservation
+    private function makeReservationRecord(Activity $activity, $user, Request $request, int $seatsCount, string $status): Reservation
     {
-        $ticketId = 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
-
-        // ملاحظة: حمولة QR المشفّرة تُولَّد تلقائياً في حدث created بنموذج Reservation
-        return Reservation::create([
-            'user_id'          => $userId,
-            'ticket_id'        => $ticketId,
-            'activity_id'      => $request->activity_id,
+        $reservation = new Reservation([
+            'user_id'          => $user->getKey(),
+            'activity_id'      => $activity->getKey(),
             'venue_id'         => $request->venue_id ?? null,
             'library_id'       => $request->library_id ?? null,
             'reservation_date' => $request->reservation_date,
             'seats_count'      => $seatsCount,
             'status'           => $status,
         ]);
+
+        // تمرير الفعالية (المقفولة) والمستخدم المُحمّلَين مسبقاً يمنع generateQrPayload من
+        // إعادة استعلامهما (loadMissing) داخل نافذة القفل؛ وticket_id + qr_payload يُولَّدان
+        // في خطّاف creating، فتكفي كتابة واحدة (INSERT) لكل حجز — بلا UPDATE ثانٍ.
+        $reservation->setRelation('activity', $activity);
+        $reservation->setRelation('user', $user);
+        $reservation->save();
+
+        return $reservation;
     }
 
     /**

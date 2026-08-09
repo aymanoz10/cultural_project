@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Demo') — {{ config('app.name') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">    <style>
         body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
     </style>
 </head>

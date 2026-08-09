@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- اللغة -->
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اللغة <span class="text-rose-500">*</span></label>
@@ -64,12 +64,6 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">عدد الصفحات</label>
           <input type="number" name="pages_count" min="1" placeholder="مثال: 320" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
-        </div>
-
-        <!-- حجم الملف -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">حجم الملف</label>
-          <input type="text" name="file_size" placeholder="مثال: 12 ميجابايت" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
         </div>
       </div>
 
@@ -89,6 +83,13 @@
           <span class="block text-[11px] text-slate-400 mb-1">معاينة الغلاف المحدد:</span>
           <img id="image-preview" src="#" class="w-20 h-28 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
         </div>
+      </div>
+
+      <!-- ملف الكتاب (PDF) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملف الكتاب (PDF)</label>
+        <input type="file" name="file" accept="application/pdf" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs">
+        <p class="text-[11px] text-slate-400 mt-1">صيغة PDF فقط · الحد الأقصى 50 ميجابايت · يُحسب الحجم تلقائياً</p>
       </div>
 
       <!-- حالة التوفر -->
@@ -161,7 +162,22 @@
         body: formData
       });
 
-      const res = await response.json();
+      // رمز 413/419 = تجاوز حجم الرفع المسموح على الخادم أو انتهاء الجلسة (استجابة ليست JSON)
+      if (response.status === 413 || response.status === 419) {
+        errorContainer.innerHTML = '<div>• تعذّر الرفع: حجم ملف الـPDF أكبر من الحد المسموح على الخادم، أو انتهت صلاحية الجلسة. أعد تحميل الصفحة وجرّب ملفاً أصغر.</div>';
+        errorContainer.classList.remove('hidden');
+        return;
+      }
+
+      let res;
+      try {
+        res = await response.json();
+      } catch (parseErr) {
+        errorContainer.innerHTML = `<div>• استجابة غير متوقعة من الخادم (رمز ${response.status}). حدّث الصفحة وحاول مجدداً.</div>`;
+        errorContainer.classList.remove('hidden');
+        return;
+      }
+
       if (response.ok && (res.success || res.data)) {
         window.location.href = "{{ route('admin.books.index', [], false) }}";
       } else {

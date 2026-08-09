@@ -1,0 +1,68 @@
+# Render Blueprint — انشر بضغطة واحدة: New + → Blueprint → اختر هذا المستودع.
+# القيم sync:false تُدخَل يدوياً في لوحة Render (أسرار). البقية تُضبط تلقائياً.
+services:
+  - type: web
+    name: cultural-project
+    runtime: docker
+    plan: free
+    region: frankfurt            # اختر الأقرب لك (frankfurt/oregon/singapore ...)
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      # ---------- التطبيق ----------
+      - key: APP_NAME
+        value: Cultural-Project
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false              # php artisan key:generate --show  ثم ألصقه
+      - key: APP_URL
+        sync: false              # https://<اسم-خدمتك>.onrender.com
+      - key: LOG_CHANNEL
+        value: stderr            # سجلّات Render تقرأ stderr مباشرة
+
+      # ---------- قاعدة البيانات: Neon (PostgreSQL) ----------
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false              # ep-xxx-pooler.<region>.aws.neon.tech
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        sync: false              # عادةً: neondb
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require           # Neon يفرض SSL
+
+      # ---------- الحالة على قاعدة البيانات (لأن قرص Render مؤقّت) ----------
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+
+      # ---------- التخزين: Cloudflare R2 (متوافق S3) ----------
+      - key: FILESYSTEM_DISK
+        value: public
+      - key: PUBLIC_DISK_DRIVER
+        value: s3
+      - key: BOOKS_DISK_DRIVER
+        value: s3
+      - key: R2_ENDPOINT
+        sync: false              # https://<account-id>.r2.cloudflarestorage.com
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_BUCKET
+        sync: false              # bucket عام (للأغلفة/الصور)
+      - key: R2_PRIVATE_BUCKET
+        sync: false              # bucket خاص (لملفات PDF)
+      - key: PUBLIC_DISK_URL
+        sync: false              # رابط R2 العام: https://pub-xxxx.r2.dev

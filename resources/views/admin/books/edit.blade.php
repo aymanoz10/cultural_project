@@ -52,7 +52,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- اللغة -->
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">اللغة <span class="text-rose-500">*</span></label>
@@ -63,12 +63,6 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">عدد الصفحات</label>
           <input type="number" name="pages_count" min="1" value="{{ $book->pages_count }}" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
-        </div>
-
-        <!-- حجم الملف -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">حجم الملف</label>
-          <input type="text" name="file_size" value="{{ $book->file_size }}" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
         </div>
       </div>
 
@@ -97,6 +91,27 @@
         </div>
 
         <input type="file" name="cover_image" id="image-input" onchange="previewNewImage(event)" accept="image/jpeg,image/png,image/jpg,image/webp" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs">
+      </div>
+
+      <!-- ملف الكتاب (PDF) -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ملف الكتاب (PDF)</label>
+
+        @if($book->hasFile())
+          <div class="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800/50 font-bold">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+              ملف مرفوع{{ $book->file_size ? ' · '.$book->file_size : '' }}
+            </span>
+            <a href="{{ route('admin.books.read', $book->id) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/50 dark:text-sky-400 dark:border-sky-800/50 font-bold hover:opacity-80 transition-opacity">قراءة</a>
+            <a href="{{ route('admin.books.download', $book->id) }}" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/5 dark:text-slate-300 dark:border-white/10 font-bold hover:opacity-80 transition-opacity">تحميل</a>
+          </div>
+        @else
+          <p class="mb-2 text-[11px] text-slate-400">لا يوجد ملف مرفوع لهذا الكتاب بعد.</p>
+        @endif
+
+        <input type="file" name="file" accept="application/pdf" class="form-input w-full bg-slate-50 dark:bg-[#111412] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-xs">
+        <p class="text-[11px] text-slate-400 mt-1">ارفع PDF جديداً لاستبدال الحالي · اتركه فارغاً للإبقاء عليه · الحد الأقصى 50 ميجابايت</p>
       </div>
 
       <!-- حالة التوفر -->
@@ -170,7 +185,22 @@
         body: formData
       });
 
-      const res = await response.json();
+      // رمز 413/419 = تجاوز حجم الرفع المسموح على الخادم أو انتهاء الجلسة (استجابة ليست JSON)
+      if (response.status === 413 || response.status === 419) {
+        errorContainer.innerHTML = '<div>• تعذّر الرفع: حجم ملف الـPDF أكبر من الحد المسموح على الخادم، أو انتهت صلاحية الجلسة. أعد تحميل الصفحة وجرّب ملفاً أصغر.</div>';
+        errorContainer.classList.remove('hidden');
+        return;
+      }
+
+      let res;
+      try {
+        res = await response.json();
+      } catch (parseErr) {
+        errorContainer.innerHTML = `<div>• استجابة غير متوقعة من الخادم (رمز ${response.status}). حدّث الصفحة وحاول مجدداً.</div>`;
+        errorContainer.classList.remove('hidden');
+        return;
+      }
+
       if (response.ok && (res.success || res.data)) {
         window.location.href = "{{ route('admin.books.index', [], false) }}";
       } else {

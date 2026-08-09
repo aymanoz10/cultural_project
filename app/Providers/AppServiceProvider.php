@@ -15,7 +15,9 @@ use App\Listeners\SendReservationCreatedNotification;
 use App\Listeners\SendVolunteeringStatusNotification;
 use App\Listeners\SendWaitListPromotedNotification;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +29,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // خطوة صفر: تفعيل مراقبة وتسجيل الاستعلامات البطيئة (> 100ms) كخط أساس للقياس
+        DB::listen(function ($query) {
+            if ($query->time > 100) {
+                Log::warning("⚠️ استعلام قاعدة بيانات بطيء ({$query->time}ms): {$query->sql}", [
+                    'bindings' => $query->bindings,
+                    'time' => $query->time,
+                ]);
+            }
+        });
+
         Relation::morphMap([
             'venue'    => 'App\Models\Venue',
             'center'   => 'App\Models\CulturalCenter',

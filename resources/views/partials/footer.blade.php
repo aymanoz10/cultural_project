@@ -31,7 +31,7 @@
           الدعم الفني
         </a>
         <span class="text-slate-200 dark:text-gray-700">|</span>
-        <span class="px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-400 dark:text-gray-400 bg-slate-50 dark:bg-[#141414] border border-slate-100 dark:border-[#d4af37]/20">
+        <span class="px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 dark:text-gray-300 bg-slate-50 dark:bg-[#141414] border border-slate-100 dark:border-[#d4af37]/20">
           v1.0.0
         </span>
       </div>

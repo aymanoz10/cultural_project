@@ -19,20 +19,20 @@
 <div class="max-w-3xl mx-auto">
   <div class="card p-6 md:p-8 space-y-6">
     <div class="flex items-center justify-between border-b pb-4 border-slate-100">
-      <h3 class="text-lg font-black text-slate-800">تعديل بيانات الفعالية: {{ $activity->title ?? $event->title }}</h3>
+      <h3 class="text-lg font-black text-slate-800">تعديل بيانات الفعالية: {{ $activity->title }}</h3>
       <a href="{{ route('admin.events.index') }}" class="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">
         ← العودة لقائمة الفعاليات
       </a>
     </div>
 
-    <form method="POST" action="{{ route('admin.events.update', $activity->id ?? $event->id) }}" enctype="multipart/form-data" class="space-y-5">
+    <form method="POST" action="{{ route('admin.events.update', $activity->id) }}" enctype="multipart/form-data" class="space-y-5">
       @csrf
       @method('PUT')
 
       <!-- عنوان الفعالية -->
       <div>
         <label class="text-xs font-bold text-slate-700 mb-1 block">عنوان الفعالية <span class="text-rose-500">*</span></label>
-        <input type="text" name="title" value="{{ old('title', $activity->title ?? $event->title) }}" placeholder="مثال: أمسية موسيقية" required class="form-input">
+        <input type="text" name="title" value="{{ old('title', $activity->title) }}" placeholder="مثال: أمسية موسيقية" required class="form-input">
         @error('title') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
       </div>
 
@@ -43,7 +43,7 @@
           <select name="cultural_center_id" required class="form-input bg-white">
             <option value="" disabled>اختر المركز الثقافي</option>
             @foreach ($centers as $center)
-              <option value="{{ $center->id }}" @selected(old('cultural_center_id', $activity->cultural_center_id ?? $event->cultural_center_id) == $center->id)>
+              <option value="{{ $center->id }}" @selected(old('cultural_center_id', $activity->cultural_center_id) == $center->id)>
                 {{ $center->name }}
               </option>
             @endforeach
@@ -57,7 +57,7 @@
           <select name="activity_type_id" required class="form-input bg-white">
             <option value="" disabled>اختر نوع الفعالية</option>
             @foreach ($activityTypes as $type)
-              <option value="{{ $type->id }}" @selected(old('activity_type_id', $activity->activity_type_id ?? $event->activity_type_id) == $type->id)>
+              <option value="{{ $type->id }}" @selected(old('activity_type_id', $activity->activity_type_id) == $type->id)>
                 {{ $type->title }}
               </option>
             @endforeach
@@ -69,8 +69,8 @@
       <!-- اسم المحاضر / المنظم -->
       <div>
         <label class="text-xs font-bold text-slate-700 mb-1 block">اسم المحاضر / المنظم</label>
-        <input type="text" name="host_name" value="{{ old('host_name', $activity->host_name ?? $event->host_name) }}" placeholder="مثال: د. أحمد خالد" class="form-input">
-        @error('host_name') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
+        <input type="text" name="presenter_name" value="{{ old('presenter_name', $activity->presenter_name) }}" placeholder="مثال: د. أحمد خالد" class="form-input">
+        @error('presenter_name') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
       </div>
 
       <!-- توقيت البداية والنهاية -->
@@ -112,7 +112,7 @@
 
         <div>
           <label class="text-xs font-bold text-slate-700 mb-1 block">السعة الاستيعابية</label>
-          <input type="number" name="capacity" value="{{ old('capacity', $activity->capacity ?? $event->capacity) }}" min="1" placeholder="مثال: 150" class="form-input">
+          <input type="number" name="capacity" value="{{ old('capacity', $activity->capacity) }}" min="1" placeholder="مثال: 150" class="form-input">
           @error('capacity') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
         </div>
       </div>
@@ -120,7 +120,7 @@
       <!-- الوصف -->
       <div>
         <label class="text-xs font-bold text-slate-700 mb-1 block">تفاصيل / وصف الفعالية</label>
-        <textarea name="description" rows="4" placeholder="اكتب وصفاً شاملاً للفعالية..." class="form-input">{{ old('description', $activity->description ?? $event->description) }}</textarea>
+        <textarea name="description" rows="4" placeholder="اكتب وصفاً شاملاً للفعالية..." class="form-input">{{ old('description', $activity->description) }}</textarea>
         @error('description') <p class="text-[11px] text-rose-600 mt-1 font-bold">{{ $message }}</p> @enderror
       </div>
 

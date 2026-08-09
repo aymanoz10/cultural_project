@@ -43,7 +43,7 @@
         </div>
       </div>
       <div>
-        <h3 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['total']) }}</h3>
+        <div class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['total']) }}</div>
         <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
           عبر جميع المراكز الثقافية
@@ -60,7 +60,7 @@
         </div>
       </div>
       <div>
-        <h3 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['finished']) }}</h3>
+        <div class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['finished']) }}</div>
         <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">فعاليات منتهية</p>
       </div>
     </div>
@@ -82,7 +82,7 @@
         </div>
       </div>
       <div>
-        <h3 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['live']) }}</h3>
+        <div class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['live']) }}</div>
         <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold tnum">{{ number_format($stats['upcoming'] ?? 0) }} فعالية قادمة</p>
       </div>
     </div>
@@ -96,7 +96,7 @@
         </div>
       </div>
       <div>
-        <h3 class="text-4xl font-black text-amber-600 dark:text-amber-400 tracking-tight mb-2 tnum">{{ number_format($stats['pendingHalls']) }}</h3>
+        <div class="text-4xl font-black text-amber-600 dark:text-amber-400 tracking-tight mb-2 tnum">{{ number_format($stats['pendingHalls']) }}</div>
         <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">بانتظار الموافقة والاعتماد</p>
       </div>
     </div>
@@ -110,7 +110,7 @@
         </div>
       </div>
       <div>
-        <h3 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['total_books']) }}</h3>
+        <div class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 tnum">{{ number_format($stats['total_books']) }}</div>
         <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
           عبر جميع مكتبات المراكز
@@ -127,7 +127,7 @@
     <div class="bg-white dark:bg-[#181C1A]/90 rounded-3xl p-6 md:p-7 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl backdrop-blur-md xl:col-span-2 flex flex-col">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h3 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">الفعاليات حسب المركز الثقافي</h3>
+          <h2 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">الفعاليات حسب المركز الثقافي</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">أكثر المراكز نشاطاً حسب عدد الفعاليات المسجّلة</p>
         </div>
         <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
@@ -169,7 +169,7 @@
     {{-- نسبة الفعاليات المكتملة (عمود واحد) --}}
     <div class="bg-white dark:bg-[#181C1A]/90 rounded-3xl p-6 md:p-7 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl backdrop-blur-md flex flex-col items-center justify-between relative overflow-hidden">
       <div class="w-full text-right mb-4">
-        <h3 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">نسبة الفعاليات المكتملة</h3>
+        <h2 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">نسبة الفعاليات المكتملة</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">الفعاليات المنتهية من إجمالي المسجّلة</p>
       </div>
 
@@ -260,7 +260,7 @@
     <div class="bg-white dark:bg-[#181C1A]/90 rounded-3xl p-6 md:p-7 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl backdrop-blur-md xl:col-span-2 flex flex-col">
       <div class="flex items-center justify-between mb-5">
         <div>
-          <h3 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">أحدث طلبات حجز القاعات</h3>
+          <h2 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">أحدث طلبات حجز القاعات</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">آخر 5 طلبات حجز مسجّلة في النظام</p>
         </div>
         <a href="{{ Route::has('admin.reservations.index') ? route('admin.reservations.index') : '#' }}"
@@ -333,7 +333,7 @@
     <div class="bg-white dark:bg-[#181C1A]/90 rounded-3xl p-6 md:p-7 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl backdrop-blur-md xl:col-span-2 flex flex-col">
       <div class="flex items-center justify-between mb-5">
         <div>
-          <h3 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">أحدث 5 كتب مضافة</h3>
+          <h2 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">أحدث 5 كتب مضافة</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">آخر الكتب التي تمت إضافتها إلى المكتبات</p>
         </div>
         <a href="{{ Route::has('admin.books.index') ? route('admin.books.index') : '#' }}"
@@ -359,7 +359,7 @@
                 <td class="py-3 px-3">
                   <div class="flex items-center gap-3">
                     <div class="w-9 h-12 rounded-lg bg-slate-100 dark:bg-white/5 overflow-hidden flex-shrink-0 border border-slate-200 dark:border-white/10">
-                      @if(!empty($book->cover_image))
+                      @if(!empty($book->cover_image) && \Illuminate\Support\Facades\Storage::disk('public')->exists($book->cover_image))
                         <img src="{{ Storage::url($book->cover_image) }}" alt="غلاف {{ $book->title }}" class="w-full h-full object-cover">
                       @else
                         <div class="w-full h-full flex items-center justify-center text-slate-400" aria-hidden="true">
@@ -396,7 +396,7 @@
     {{-- توزيع الكتب حسب التصنيف (عمود واحد) --}}
     <div class="bg-white dark:bg-[#181C1A]/90 rounded-3xl p-6 md:p-7 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-xl backdrop-blur-md flex flex-col">
       <div class="mb-5">
-        <h3 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">توزيع الكتب حسب التصنيف</h3>
+        <h2 class="section-accent font-extrabold text-slate-900 dark:text-white text-lg">توزيع الكتب حسب التصنيف</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">عدد الكتب في كل تصنيف</p>
       </div>
 
