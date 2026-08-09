@@ -1,0 +1,71 @@
+# Render Blueprint — الأسرار (sync:false) تُدخَل في لوحة Render، لا في هذا الملف المرفوع لـ Git.
+services:
+  - type: web
+    name: cultural-projects
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      # ---------- التطبيق ----------
+      - key: APP_NAME
+        value: CulturalSystem
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        value: https://cultural-projects.onrender.com
+      - key: APP_KEY
+        sync: false                 # 🔒 سرّ — ألصقه في لوحة Render
+      - key: LOG_CHANNEL
+        value: stderr
+
+      # ---------- قاعدة Neon (PostgreSQL) — عبر الـ Pooler ----------
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: ep-little-bird-za81fm0r-pooler.c-2.eu-west-2.aws.neon.tech
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        value: neondb
+      - key: DB_USERNAME
+        value: neondb_owner
+      - key: DB_PASSWORD
+        sync: false                 # 🔒 سرّ
+      - key: DB_SSLMODE
+        value: require
+
+      # ---------- الحالة على قاعدة البيانات (قرص Render مؤقّت) ----------
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+
+      # ---------- التخزين: Supabase Storage (متوافق S3) ----------
+      - key: FILESYSTEM_DISK
+        value: public               # القرص الافتراضي = العام (Supabase) لروابط الأغلفة
+      - key: PUBLIC_DISK_DRIVER
+        value: s3
+      - key: BOOKS_DISK_DRIVER
+        value: s3
+      - key: AWS_ACCESS_KEY_ID
+        sync: false                 # 🔒 سرّ
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false                 # 🔒 سرّ
+      - key: AWS_DEFAULT_REGION
+        value: us-east-1
+      - key: AWS_ENDPOINT
+        value: https://hmevzsgznrfafovymwef.storage.supabase.co/storage/v1/s3
+      - key: AWS_USE_PATH_STYLE_ENDPOINT
+        value: "true"               # مطلوب لنقاط S3 المخصّصة مثل Supabase
+      - key: AWS_PUBLIC_BUCKET
+        value: cultural-public      # bucket عام (الأغلفة/الصور)
+      - key: AWS_PRIVATE_BUCKET
+        value: cultural-private     # bucket خاص (ملفات PDF) — أنشئه في Supabase
+      - key: PUBLIC_DISK_URL
+        value: https://hmevzsgznrfafovymwef.supabase.co/storage/v1/object/public/cultural-public
