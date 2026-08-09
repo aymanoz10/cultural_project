@@ -11,6 +11,9 @@ class SendWaitListPromotedNotification implements ShouldQueue
 {
     use InteractsWithQueue;
 
+    public $tries = 1;
+    public $timeout = 120;
+
     public function handle(WaitListPromoted $event): void
     {
         $reservation = $event->reservation->loadMissing('activity', 'user');

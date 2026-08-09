@@ -11,6 +11,9 @@ class SendVolunteeringStatusNotification implements ShouldQueue
 {
     use InteractsWithQueue;
 
+    public $tries = 1;
+    public $timeout = 120;
+
     public function handle(VolunteeringStatusUpdated $event): void
     {
         $volunteering = $event->volunteering->loadMissing('user', 'volunteeringActivity');

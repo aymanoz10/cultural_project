@@ -103,30 +103,34 @@ class BookController extends Controller
 
         $books = $query->paginate(12)->withQueryString();
 
-        // 🟢 [التعديل الأهم بناءً على الصور]: التحقق إذا كان الطلب API أو يطلب JSON
-        if ($request->wantsJson() || $request->is('api/*')) {
-            return response()->json([
-                'success' => true,
-                'data'    => $books->items(), // يرجع List مباشرة لتطبيق Flutter
-                'meta'    => [                // معلومات الـ Pagination ككائن منفصل
-                    'current_page' => $books->currentPage(),
-                    'last_page'    => $books->lastPage(),
-                    'total'        => $books->total(),
-                    'per_page'     => $books->perPage(),
-                ]
-            ]);
-        }
+// نحسبها مرة وحدة، تُستخدم بفرعي API والـ Web
+$categories = Book::query()
+    ->whereNotNull('category')
+    ->where('category', '!=', '')
+    ->select('category')
+    ->distinct()
+    ->orderBy('category')
+    ->pluck('category');
 
-        // 🔵 إذا كان الطلب Web (متصفح عادي)، نكمل جلب البيانات للـ View
-        $categories = Book::query()
-            ->select('category')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+// 🟢 التحقق إذا كان الطلب API أو يطلب JSON
+if ($request->wantsJson() || $request->is('api/*')) {
+    return response()->json([
+        'success'    => true,
+        'data'       => $books->items(),
+        'meta'       => [
+            'current_page' => $books->currentPage(),
+            'last_page'    => $books->lastPage(),
+            'total'        => $books->total(),
+            'per_page'     => $books->perPage(),
+        ],
+        'categories' => $categories, // ← السطر المضاف فقط
+    ]);
+}
 
-        $libraries = Library::all();
+// 🔵 إذا كان الطلب Web (متصفح عادي)
+$libraries = Library::all();
 
-        return view('admin.books.index', compact('books', 'categories', 'libraries'));
+return view('admin.books.index', compact('books', 'categories', 'libraries'));
     }
     /**
      * عرض صفحة إضافة كتاب جديد

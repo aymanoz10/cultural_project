@@ -21,7 +21,7 @@ class AiComparisonService
 
     public function compareActivities(int $id1, int $id2): array
     {
-        $activities = Activity::with('culturalCenter:id,name,location')
+        $activities = Activity::with(['culturalCenter:id,name,location', 'activityType:id,title'])
             ->whereIn('id', [$id1, $id2])
             ->get()
             ->keyBy('id');
@@ -37,7 +37,7 @@ class AiComparisonService
         // هذا يضمن أن الأرقام والتواريخ صحيحة 100%.
         $criteria = [
             $this->row('العنوان', $a->title, $b->title),
-            $this->row('النوع', $a->type, $b->type),
+            $this->row('النوع', $a->activityType->title ?? '-', $b->activityType->title ?? '-'),
             $this->row('المركز الثقافي', $a->culturalCenter->name ?? '-', $b->culturalCenter->name ?? '-'),
             $this->row('الموقع', $a->culturalCenter->location ?? '-', $b->culturalCenter->location ?? '-'),
             $this->row('التاريخ والوقت', optional($a->start_time)->format('Y-m-d H:i') ?? '-', optional($b->start_time)->format('Y-m-d H:i') ?? '-'),

@@ -45,7 +45,7 @@ class CulturalCenterController extends Controller
     public function show(Request $request, $id)
     {
         // شحن العلاقات مسبقاً (photos و venues)
-        $center = CulturalCenter::with(['photos', 'venues'])->findOrFail($id);
+        $center = CulturalCenter::with(['photos', 'venues.type'])->findOrFail($id);
 
         // 🟢 إرجاع استجابة JSON للـ API وتطبيق Flutter
         if ($request->wantsJson() || $request->is('api/*')) {

@@ -205,7 +205,8 @@ class ActivityController extends Controller
     public function finished(Request $request)
     {
         $perPage = max(1, min($request->integer('per_page', 10), 100));
-        $activities = Activity::where('end_time', '<', now())
+        $activities = Activity::with(['culturalCenter', 'venue', 'activityType'])
+            ->where('end_time', '<', now())
             ->latest('end_time')
             ->paginate($perPage);
 
