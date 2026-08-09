@@ -21,13 +21,16 @@ FROM php:8.4-cli AS app
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git unzip libpq-dev libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_pgsql pgsql gd zip bcmath \
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_pgsql pgsql gd zip bcmath opcache \
     && rm -rf /var/lib/apt/lists/*
 
 # Composer (من صورته الرسمية)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
+
+# إعدادات PHP للإنتاج (أحجام رفع الكتب + opcache + حدّ ذاكرة مناسب لـ256MB)
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-app.ini
 
 # تثبيت اعتماديات PHP أولاً للاستفادة من التخزين المؤقت للطبقات
 COPY composer.json composer.lock ./
