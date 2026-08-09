@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\ReservationCancelled as ReservationCancelledEvent;
 use App\Events\ReservationCreated;
 use App\Events\WaitListPromoted;
+use App\Http\Resources\ReservationResource;
 use App\Models\Activity;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
@@ -18,11 +19,24 @@ class ReservationController extends Controller
     private const DEFAULT_MAX_SEATS_PER_USER = 5;
 
     /**
+     * الحالة الابتدائية الصحيحة عند تخصيص مقعد فعلياً لمستخدم:
+     * فعالية مجانية → فعّالة مباشرة (لا شيء يُدفع).
+     * فعالية مدفوعة → "غير مدفوعة" بانتظار الدفع، حتى يُمسح الباركود
+     * (الدفع نقداً عند الحضور) أو تُضاف بوابة دفع إلكتروني لاحقاً.
+     */
+    private function initialSeatStatus(Activity $activity): string
+    {
+        $isPaid = $activity->ticket_price !== null && (float) $activity->ticket_price > 0;
+
+        return $isPaid ? Reservation::STATUS_PENDING_PAYMENT : Reservation::STATUS_CONFIRMED;
+    }
+
+    /**
      * عرض كافة حجوزات المستخدم الحالي
      */
     public function index(Request $request)
     {
-        $query = Reservation::with(['user', 'activity', 'venue'])
+        $query = Reservation::with(['user', 'activity.activityType', 'activity.culturalCenter', 'activity.venue', 'venue'])
             ->where('user_id', $request->user()->id);
 
         if ($request->has('activity_id')) {
@@ -33,10 +47,11 @@ class ReservationController extends Controller
             $query->where('status', $request->status);
         }
 
-        return response()->json([
-            'success' => true,
-            'data'    => $query->latest()->get(),
-        ]);
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+
+        return ReservationResource::collection(
+            $query->latest()->paginate($perPage)
+        );
     }
 
     /**
@@ -90,7 +105,11 @@ class ReservationController extends Controller
             // التحقق من السقف الإجمالي لمقاعد المستخدم
             $userExistingSeats = Reservation::where('user_id', $userId)
                 ->where('activity_id', $activity->id)
-                ->whereIn('status', [Reservation::STATUS_CONFIRMED, Reservation::STATUS_WAIT_LIST])
+                ->whereIn('status', [
+                    Reservation::STATUS_CONFIRMED,
+                    Reservation::STATUS_PENDING_PAYMENT,
+                    Reservation::STATUS_WAIT_LIST,
+                ])
                 ->sum('seats_count');
 
             if (($userExistingSeats + $requestedSeats) > $maxAllowedSeats) {
@@ -99,9 +118,9 @@ class ReservationController extends Controller
                 ]);
             }
 
-            // حساب المقاعد المتاحة
+            // حساب المقاعد المتاحة (الحجوزات "غير المدفوعة" تشغل مقعداً أيضاً بانتظار الدفع)
             $confirmedSeatsSum = Reservation::where('activity_id', $activity->id)
-                ->where('status', Reservation::STATUS_CONFIRMED)
+                ->whereIn('status', Reservation::SEAT_OCCUPYING_STATUSES)
                 ->sum('seats_count');
 
             $availableSeats = max(0, $activity->capacity - $confirmedSeatsSum);
@@ -111,8 +130,8 @@ class ReservationController extends Controller
                 $confirmedCount = $availableSeats;
                 $waitlistCount  = $requestedSeats - $availableSeats;
 
-                // حجز المقاعد المتاحة
-                $confirmedRes = $this->makeReservationRecord($activity, $request->user(), $request, $confirmedCount, Reservation::STATUS_CONFIRMED);
+                // حجز المقاعد المتاحة (فعّالة مباشرة إن كانت مجانية، أو "غير مدفوعة" إن كانت مدفوعة)
+                $confirmedRes = $this->makeReservationRecord($activity, $request->user(), $request, $confirmedCount, $this->initialSeatStatus($activity));
                 ReservationCreated::dispatch($confirmedRes->loadMissing(['activity', 'user']));
 
                 // إضافة المتبقي للانتظار
@@ -129,7 +148,7 @@ class ReservationController extends Controller
 
             // الخيار ب: النقل الكامل (Atomic Allocation)
             $status = ($availableSeats >= $requestedSeats)
-                ? Reservation::STATUS_CONFIRMED
+                ? $this->initialSeatStatus($activity)
                 : Reservation::STATUS_WAIT_LIST;
 
             $reservation = $this->makeReservationRecord($activity, $request->user(), $request, $requestedSeats, $status);
@@ -160,9 +179,11 @@ class ReservationController extends Controller
             ], 201);
         }
 
-        $message = ($result['status'] === Reservation::STATUS_WAIT_LIST)
-            ? 'تمت إضافة طلبك إلى قائمة الانتظار لعدم توفر كامل المقاعد المطلوبة'
-            : 'تم تأكيد الحجز بنجاح';
+        $message = match ($result['status']) {
+            Reservation::STATUS_WAIT_LIST => 'تمت إضافة طلبك إلى قائمة الانتظار لعدم توفر كامل المقاعد المطلوبة',
+            Reservation::STATUS_PENDING_PAYMENT => 'تم حجز مقعدك، بانتظار إتمام الدفع لتأكيد الفعالية',
+            default => 'تم تأكيد الحجز بنجاح',
+        };
 
         return response()->json([
             'success' => true,
@@ -176,11 +197,11 @@ class ReservationController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $reservation = Reservation::with(['activity', 'venue', 'library'])
+        $reservation = Reservation::with(['activity.activityType', 'activity.culturalCenter', 'activity.venue', 'venue', 'library'])
             ->where('user_id', $request->user()->id)
             ->findOrFail($id);
 
-        return response()->json(['data' => $reservation]);
+        return new ReservationResource($reservation);
     }
 
     /**
@@ -220,11 +241,14 @@ class ReservationController extends Controller
                 ]);
             }
 
-            $wasConfirmed = ($reservation->status === Reservation::STATUS_CONFIRMED);
+            // ✅ الحجز "غير المدفوعة" (PENDING_PAYMENT) تشغل مقعداً فعلياً تماماً
+            // مثل "فعّالة" (CONFIRMED)، فيجب إرجاع المقعد وترقية قائمة الانتظار
+            // عند إلغاء أيٍّ من الحالتين، وليس CONFIRMED فقط كما كان سابقاً.
+            $wasSeatOccupying = in_array($reservation->status, Reservation::SEAT_OCCUPYING_STATUSES, true);
             $reservation->update(['status' => Reservation::STATUS_CANCELLED]);
 
-            // د) ترقية قائمة الانتظار عند إلغاء حجز مؤكد
-            if ($wasConfirmed) {
+            // د) ترقية قائمة الانتظار عند إلغاء حجز كان يشغل مقعداً
+            if ($wasSeatOccupying) {
                 $this->promoteFromWaitListBounded($activity);
             }
 
@@ -236,7 +260,7 @@ class ReservationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم إلغاء الحجز بنجاح',
-            'data'    => $reservation,
+            'data'    => new ReservationResource($reservation),
         ]);
     }
 
@@ -289,7 +313,7 @@ class ReservationController extends Controller
     private function promoteFromWaitListBounded(Activity $activity): void
     {
         $confirmedSeatsSum = Reservation::where('activity_id', $activity->id)
-            ->where('status', Reservation::STATUS_CONFIRMED)
+            ->whereIn('status', Reservation::SEAT_OCCUPYING_STATUSES)
             ->sum('seats_count');
 
         $availableSeats = max(0, $activity->capacity - $confirmedSeatsSum);
@@ -307,13 +331,15 @@ class ReservationController extends Controller
             ->lockForUpdate()
             ->get();
 
+        $promotedStatus = $this->initialSeatStatus($activity);
+
         foreach ($candidates as $candidate) {
             if ($candidate->seats_count > $availableSeats) {
                 continue;
             }
 
             // الحمولة المشفّرة مستقلّة عن الحالة (تُقرأ الحالة من قاعدة البيانات عند المسح)
-            $candidate->status = Reservation::STATUS_CONFIRMED;
+            $candidate->status = $promotedStatus;
             $candidate->save();
 
             $availableSeats -= $candidate->seats_count;

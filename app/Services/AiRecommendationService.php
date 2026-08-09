@@ -62,7 +62,7 @@ class AiRecommendationService
     protected function getCandidateActivities(User $user)
     {
         return Activity::query()
-            ->with('culturalCenter:id,name,location')
+            ->with(['culturalCenter:id,name,location', 'activityType:id,title', 'venue:id,name'])
             ->where('start_time', '>=', now())
             ->where('start_time', '<=', now()->addDays(30))
             ->whereDoesntHave('reservations', function ($q) use ($user) {
@@ -81,20 +81,20 @@ class AiRecommendationService
     {
         $reservedTypes = $user->reservations()
             ->whereNotNull('activity_id')
-            ->with('activity:id,type,title')
+            ->with('activity:id,activity_type_id,title', 'activity.activityType:id,title')
             ->get()
             ->pluck('activity')
             ->filter()
-            ->map(fn ($a) => ['title' => $a->title, 'type' => $a->type]);
+            ->map(fn ($a) => ['title' => $a->title, 'type' => $a->activityType->title ?? null]);
 
         $likedTypes = $user->ratings()
             ->where('value', '>=', 4)
             ->where('rateable_type', Activity::class)
-            ->with('rateable:id,type,title')
+            ->with('rateable:id,activity_type_id,title', 'rateable.activityType:id,title')
             ->get()
             ->pluck('rateable')
             ->filter()
-            ->map(fn ($a) => ['title' => $a->title, 'type' => $a->type]);
+            ->map(fn ($a) => ['title' => $a->title, 'type' => $a->activityType->title ?? null]);
 
         return [
             'past_reservations' => $reservedTypes->values(),
@@ -110,7 +110,7 @@ class AiRecommendationService
         $candidatesPayload = $candidates->map(fn ($a) => [
             'activity_id' => $a->id,
             'title'       => $a->title,
-            'type'        => $a->type,
+            'type'        => $a->activityType->title ?? null,
             'description' => str($a->description)->limit(150)->toString(),
             'center'      => $a->culturalCenter->name ?? null,
             'start_time'  => optional($a->start_time)->format('Y-m-d H:i'),
@@ -140,7 +140,7 @@ PROMPT;
                     'HTTP-Referer' => config('app.url'),
                     'X-Title'      => config('app.name'),
                 ])
-                ->timeout(30)
+                ->timeout(12) // ⬇ كانت 30 ثانية — أطول من مهلة اتصال التطبيق غالباً
                 ->post($this->endpoint, [
                     'model'    => $this->model,
                     'messages' => [

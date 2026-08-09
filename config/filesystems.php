@@ -67,7 +67,14 @@ return [
             'use_path_style_endpoint' => true,
         ],
 
-        // قرص S3 عام (متوافق مع AWS / R2 / Supabase) — احتياطي.
+        // قرص خاص لملفات الكتب (PDF): لا رابط عام ولا symlink — يُقدَّم عبر BookFileController فقط
+        'books_private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/books'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

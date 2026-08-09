@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Volunteering;
 use App\Http\Resources\VolunteeringResource;
+use App\Events\VolunteeringStatusUpdated;
 use Illuminate\Http\Request;
 
 class VolunteeringController extends Controller
@@ -115,6 +116,8 @@ class VolunteeringController extends Controller
 
         $volunteering = Volunteering::findOrFail($id);
         $volunteering->update(['status' => $request->status]);
+
+        VolunteeringStatusUpdated::dispatch($volunteering->fresh()->loadMissing(['user', 'volunteeringActivity']));
 
         return response()->json([
             'success' => true,

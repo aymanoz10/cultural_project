@@ -74,11 +74,14 @@ class BookController extends Controller
     /**
      * عرض قائمة الكتب مع الفلترة والتصفح
      */
+/**
+     * عرض قائمة الكتب مع الفلترة والتصفح (يدعم Web و API)
+     */
     public function index(Request $request)
     {
         $query = Book::with('library')->latest();
 
-        // البحث في العنوان أو المؤلف أو التصنيف (غير حساس لحالة الأحرف — PostgreSQL ilike)
+        // البحث في العنوان أو المؤلف أو التصنيف (غير حساس لحالة الأحرف)
         if ($request->filled('search')) {
             $term = "%{$request->search}%";
             $query->where(function ($q) use ($term) {
@@ -100,17 +103,35 @@ class BookController extends Controller
 
         $books = $query->paginate(12)->withQueryString();
 
-        $categories = Book::query()
-            ->select('category')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+// نحسبها مرة وحدة، تُستخدم بفرعي API والـ Web
+$categories = Book::query()
+    ->whereNotNull('category')
+    ->where('category', '!=', '')
+    ->select('category')
+    ->distinct()
+    ->orderBy('category')
+    ->pluck('category');
 
-        $libraries = Library::all();
+// 🟢 التحقق إذا كان الطلب API أو يطلب JSON
+if ($request->wantsJson() || $request->is('api/*')) {
+    return response()->json([
+        'success'    => true,
+        'data'       => $books->items(),
+        'meta'       => [
+            'current_page' => $books->currentPage(),
+            'last_page'    => $books->lastPage(),
+            'total'        => $books->total(),
+            'per_page'     => $books->perPage(),
+        ],
+        'categories' => $categories, // ← السطر المضاف فقط
+    ]);
+}
 
-        return view('admin.books.index', compact('books', 'categories', 'libraries'));
+// 🔵 إذا كان الطلب Web (متصفح عادي)
+$libraries = Library::all();
+
+return view('admin.books.index', compact('books', 'categories', 'libraries'));
     }
-
     /**
      * عرض صفحة إضافة كتاب جديد
      */
@@ -162,13 +183,21 @@ class BookController extends Controller
     /**
      * عرض بيانات كتاب واحد (واجهة قراءة فقط)
      */
-    public function show($id)
+ public function show(Request $request, $id)
     {
         $book = Book::with('library')->findOrFail($id);
 
+        // 🟢 إذا كان الطلب API أو يطلب JSON
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'data'    => $book, // كائن مفرد، سيتعرف عليه Flutter كـ Map مباشرة
+            ]);
+        }
+
+        // 🔵 إذا كان الطلب Web (متصفح عادي)
         return view('admin.books.show', compact('book'));
     }
-
     /**
      * عرض صفحة تعديل كتاب
      */

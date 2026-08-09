@@ -23,6 +23,10 @@ class FcmChannel
         $tokens = $notifiable->routeNotificationForFcm();
 
         if (empty($tokens)) {
+            Log::warning('FCM skipped: no device tokens registered for notifiable', [
+                'notifiable_type' => get_class($notifiable),
+                'notifiable_id'   => $notifiable->getKey(),
+            ]);
             return;
         }
 
@@ -40,32 +44,59 @@ class FcmChannel
         $accessToken = $this->accessToken();
         $projectId   = config('services.fcm.project_id');
 
-        if (! $accessToken || ! $projectId) {
-            Log::warning('FCM skipped: missing project_id or service-account credentials');
+        if (! $accessToken) {
+            Log::warning('FCM skipped: could not obtain OAuth access token (check FCM_CREDENTIALS path/content, or the service-account key may need to be regenerated).');
+            return;
+        }
+
+        if (! $projectId) {
+            Log::warning('FCM skipped: FCM_PROJECT_ID is not set in .env.');
             return;
         }
 
         $endpoint = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
 
         foreach ((array) $tokens as $token) {
-            $response = Http::withToken($accessToken)
-                ->timeout(10)->retry(2, 500)
-                ->post($endpoint, [
-                    'message' => [
-                        'token'        => $token,
-                        'notification' => [
-                            'title' => $payload['title'] ?? '',
-                            'body'  => $payload['body'] ?? '',
+            try {
+                $response = Http::withToken($accessToken)
+                    ->timeout(10)->retry(2, 500)
+                    ->post($endpoint, [
+                        'message' => [
+                            'token'        => $token,
+                            'notification' => [
+                                'title' => $payload['title'] ?? '',
+                                'body'  => $payload['body'] ?? '',
+                            ],
+                            'data' => array_map('strval', $payload['data'] ?? []),
                         ],
-                        'data' => array_map('strval', $payload['data'] ?? []),
-                    ],
+                    ]);
+            } catch (\Throwable $e) {
+                Log::error('FCM v1 send connection failed', [
+                    'token' => $token,
+                    'error' => $e->getMessage(),
                 ]);
+                continue;
+            }
+
+            if ($response->successful()) {
+                Log::info('FCM v1 send success', ['token' => $token]);
+            }
 
             if (! $response->successful()) {
+                $errorBody = $response->json();
                 Log::error('FCM v1 send failed', [
                     'token'    => $token,
-                    'response' => $response->json(),
+                    'response' => $errorBody,
                 ]);
+
+                // ✅ رفض دائم من فايربيز (الجهاز أزال التطبيق، أو تثبيت جديد
+                // أبطل التوكن القديم) — لا فائدة من إعادة المحاولة لاحقاً،
+                // فنحذف التوكن نهائياً من قاعدة البيانات فوراً.
+                $errorStatus = $errorBody['error']['status'] ?? null;
+                if (in_array($errorStatus, ['NOT_FOUND', 'UNREGISTERED', 'INVALID_ARGUMENT'], true)) {
+                    \App\Models\DeviceToken::where('token', $token)->delete();
+                    Log::info('FCM: removed dead device token', ['token' => $token]);
+                }
             }
         }
     }
@@ -81,40 +112,67 @@ class FcmChannel
             return null;
         }
 
-        return Cache::remember('fcm_access_token', 3300, function () use ($path) {
-            $sa = json_decode((string) file_get_contents($path), true);
+        $cached = Cache::get('fcm_access_token');
+        if ($cached) {
+            return $cached;
+        }
 
-            if (! isset($sa['client_email'], $sa['private_key'])) {
-                return null;
-            }
+        $sa = json_decode((string) file_get_contents($path), true);
 
-            $now = time();
-            $claim = [
-                'iss'   => $sa['client_email'],
-                'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
-                'aud'   => 'https://oauth2.googleapis.com/token',
-                'iat'   => $now,
-                'exp'   => $now + 3600,
-            ];
+        if (! isset($sa['client_email'], $sa['private_key'])) {
+            return null;
+        }
 
-            $base64Url = fn (string $data): string => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        $now = time();
+        $claim = [
+            'iss'   => $sa['client_email'],
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+            'aud'   => 'https://oauth2.googleapis.com/token',
+            'iat'   => $now,
+            'exp'   => $now + 3600,
+        ];
 
-            $segments = [
-                $base64Url(json_encode(['alg' => 'RS256', 'typ' => 'JWT'])),
-                $base64Url(json_encode($claim)),
-            ];
-            $signingInput = implode('.', $segments);
+        $base64Url = fn (string $data): string => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 
-            $signature = '';
-            openssl_sign($signingInput, $signature, $sa['private_key'], OPENSSL_ALGO_SHA256);
-            $jwt = $signingInput . '.' . $base64Url($signature);
+        $segments = [
+            $base64Url(json_encode(['alg' => 'RS256', 'typ' => 'JWT'])),
+            $base64Url(json_encode($claim)),
+        ];
+        $signingInput = implode('.', $segments);
 
+        $signature = '';
+        openssl_sign($signingInput, $signature, $sa['private_key'], OPENSSL_ALGO_SHA256);
+        $jwt = $signingInput . '.' . $base64Url($signature);
+
+        try {
             $response = Http::asForm()->timeout(10)->post('https://oauth2.googleapis.com/token', [
                 'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
                 'assertion'  => $jwt,
             ]);
+        } catch (\Throwable $e) {
+            // ⚠️ فشل اتصال حقيقي (وليس رد خطأ HTTP عادي) — غالباً مشكلة
+            // شهادات SSL شائعة بـ PHP على ويندوز، أو انقطاع إنترنت مؤقت.
+            // لا نسمح لهذا بإسقاط الـ Job بالكامل، فقط نسجّله ونُرجع null
+            // بدون تخزينه بالكاش، حتى تُعاد المحاولة بالمرة القادمة مباشرة.
+            \Illuminate\Support\Facades\Log::error('FCM OAuth token request failed: ' . $e->getMessage());
+            return null;
+        }
 
-            return $response->json('access_token');
-        });
+        if (! $response->successful()) {
+            \Illuminate\Support\Facades\Log::error('FCM OAuth token request returned error', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return null;
+        }
+
+        $token = $response->json('access_token');
+
+        // ✅ نخزّن بالكاش فقط عند النجاح الفعلي — لا نُبقي فشلاً مؤقتاً محفوظاً 55 دقيقة
+        if ($token) {
+            Cache::put('fcm_access_token', $token, 3300);
+        }
+
+        return $token;
     }
 }

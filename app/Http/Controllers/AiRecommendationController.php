@@ -33,10 +33,18 @@ class AiRecommendationController extends Controller
         $data = Cache::remember($cacheKey, now()->addHours(6), function () use ($user, $limit) {
             $results = $this->recommender->recommend($user, $limit);
 
-            return collect($results)->map(fn ($item) => [
-                'reason'   => $item['reason'],
-                'activity' => (new ActivityResource($item['activity']))->resolve(),
-            ]);
+            return collect($results)
+                ->map(fn ($item) => [
+                    'reason'   => $item['reason'],
+                    'activity' => (new ActivityResource($item['activity']))->resolve(),
+                ])
+                // ✅ حاسم: map() تحافظ على مفاتيح المصفوفة الأصلية (قد تكون
+                // غير متسلسلة بسبب array_filter() بخدمة التوصيات). بدون
+                // values() لإعادة الترقيم من الصفر، PHP يُرمِّز أي مصفوفة
+                // بمفاتيح غير متسلسلة كـ JSON Object {} بدل Array []
+                // بشكل متذبذب حسب أي عنصر استُبعد بالتصفية تحديداً — وهذا
+                // بالضبط سبب فشل الفلاتر أحياناً بخطأ type cast.
+                ->values();
         });
 
         return response()->json(['data' => $data]);

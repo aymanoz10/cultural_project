@@ -12,9 +12,17 @@ class ActivityResource extends JsonResource
         return [
             'id'                 => $this->id,
             'cultural_center_id' => $this->cultural_center_id,
+            'cultural_center'    => $this->whenLoaded('culturalCenter', fn () => $this->culturalCenter ? [
+                'id'   => $this->culturalCenter->id,
+                'name' => $this->culturalCenter->name,
+            ] : null),
             'activity_type_id'   => $this->activity_type_id,
             'activity_type'      => $this->whenLoaded('activityType', fn () => new ActivityTypeResource($this->activityType)),
             'venue_id'           => $this->venue_id,
+            'venue'              => $this->whenLoaded('venue', fn () => $this->venue ? [
+                'id'   => $this->venue->id,
+                'name' => $this->venue->name,
+            ] : null),
             'title'              => $this->title,
             'presenter_name'     => $this->presenter_name,
             'presenter_avatar'   => $this->presenter_avatar ? asset('storage/' . $this->presenter_avatar) : null,

@@ -62,10 +62,16 @@ class NotificationController extends Controller
 
     private function format(DatabaseNotification $notification): array
     {
+        $data = $notification->data ?? [];
+
         return [
             'id'         => $notification->id,
-            'type'       => class_basename($notification->type),
-            'data'       => $notification->data,
+            'type'       => $data['type'] ?? class_basename($notification->type),
+            'title'      => $data['title'] ?? '',
+            'body'       => $data['body'] ?? '',
+            'icon'       => $data['icon'] ?? null,
+            'action_url' => $data['action_url'] ?? null,
+            'is_read'    => $notification->read_at !== null,
             'read_at'    => $notification->read_at,
             'created_at' => $notification->created_at,
         ];

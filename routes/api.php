@@ -23,7 +23,10 @@ use App\Http\Controllers\{
     AiAssistantController,
     AiComparisonController,
     AiRecommendationController,
+    BookController,
+    BookFileController,
     DemoNotificationController,
+    TicketScanController,
 };
 use Illuminate\Http\Request;
 
@@ -42,13 +45,14 @@ Route::post('/admin/login', [AdminAuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'get']);
     Route::put('/profile', [AuthController::class, 'update']);
+    Route::post('/profile/avatar', [AuthController::class, 'updateAvatar']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/assistant/ask', [AiAssistantController::class, 'ask']);
     Route::get('/ai/for-you', [AiRecommendationController::class, 'forYou']);
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-
+     
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
@@ -79,12 +83,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [SuggestionController::class, 'edit']);
         Route::delete('/{id}', [SuggestionController::class, 'remove']);
     });
+    Route::post('/tickets/verify', [TicketScanController::class, 'verify']);
+    Route::post('/reservations', [ReservationController::class, 'store']);
+    Route::get('/my-tickets', [ReservationController::class, 'myTickets']);
+    Route::get('/tickets/{ticket_id}', [ReservationController::class, 'show']);
+    Route::post('/tickets/{ticket_id}/cancel', [ReservationController::class, 'cancel']);
 });
 
 Route::post('/volunteerings', [VolunteeringController::class, 'add']);
 
 Route::middleware('auth:admin')->prefix('admin')->group(function () {
     Route::get('/profile', [AdminAuthController::class, 'get']);
+    Route::get('/profile', [AdminAuthController::class, 'profile']);
+     Route::post('/profile/update', [AdminAuthController::class, 'update']);
     
     // مسار حفظ المستخدم الجديد من لوحة التحكم (يرتبط بدالة store)
     
@@ -162,6 +173,7 @@ Route::prefix('activities')->group(function () {
     Route::get('/finished', [ActivityController::class, 'finished']);
     Route::get('/coming', [ActivityController::class, 'coming']);
     Route::get('/{activityId}/wait-list', [ReservationController::class, 'waitList']);
+    Route::get('/{id}', [ActivityController::class, 'show']); // ✅ جلب فعالية واحدة بالتفصيل
 
     Route::middleware('auth:admin')->group(function () {
         Route::post('/', [ActivityController::class, 'add']);
@@ -210,3 +222,9 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/ai/compare', [AiComparisonController::class, 'compare']);
+Route::prefix('books')->group(function () {
+    Route::get('/', [BookController::class, 'index']);         // عرض الكتب مع الفلترة
+    Route::get('/{id}', [BookController::class, 'show']);      // عرض تفاصيل كتاب
+    Route::get('/{book}/read', [BookFileController::class, 'read'])->name('books.read');
+    Route::get('/{book}/download', [BookFileController::class, 'download'])->name('books.download');
+});

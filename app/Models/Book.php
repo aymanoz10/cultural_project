@@ -22,6 +22,11 @@ class Book extends Model
         'download_count'  => 'integer',
     ];
 
+    // تُضاف تلقائياً لكل تحويل toArray()/toJson() (ومنها استجابات JSON بالكنترولر)
+    protected $appends = [
+        'cover_url', 'pdf_read_url', 'pdf_download_url', 'downloads_count', 'added_date',
+    ];
+
     /** هل للكتاب ملف PDF مرفوع؟ */
     public function hasFile(): bool
     {
@@ -31,5 +36,35 @@ class Book extends Model
     public function library()
     {
         return $this->belongsTo(Library::class);
+    }
+
+    /** رابط كامل لصورة الغلاف (القرص العام public) */
+    public function getCoverUrlAttribute(): ?string
+    {
+        return $this->cover_image ? asset('storage/'.ltrim($this->cover_image, '/')) : null;
+    }
+
+    /** رابط قراءة الكتاب داخل التطبيق (محمي بالتوكن) */
+    public function getPdfReadUrlAttribute(): ?string
+    {
+        return $this->hasFile() ? route('books.read', $this->id) : null;
+    }
+
+    /** رابط تحميل الكتاب (محمي بالتوكن) */
+    public function getPdfDownloadUrlAttribute(): ?string
+    {
+        return $this->hasFile() ? route('books.download', $this->id) : null;
+    }
+
+    /** اسم بديل متوافق مع الفرونت (downloads_count بدل download_count) */
+    public function getDownloadsCountAttribute(): int
+    {
+        return (int) $this->download_count;
+    }
+
+    /** تاريخ الإضافة بصيغة مقروءة */
+    public function getAddedDateAttribute(): ?string
+    {
+        return $this->created_at?->format('Y-m-d');
     }
 }

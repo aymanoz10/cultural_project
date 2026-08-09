@@ -61,14 +61,20 @@ class TicketScanController extends Controller
             return response()->json(['success' => false, 'result' => 'already_used', 'message' => 'التذكرة مستخدمة مسبقاً (تم تسجيل الحضور)', 'info' => $info], 200);
         }
 
-        // فعّالة (CONFIRMED) → مكتملة (COMPLETED): تسجيل الحضور
+        // فعّالة (CONFIRMED) أو غير مدفوعة (PENDING_PAYMENT) → مكتملة (COMPLETED):
+        // تسجيل الحضور. بالنسبة للتذاكر "غير المدفوعة"، مسح الباركود يُعتبر
+        // إتماماً للدفع نقداً عند الحضور (لا توجد بوابة دفع إلكتروني بعد)،
+        // فتُنقل مباشرة لحالة "مكتملة" كما هو الحال مع التذاكر الفعّالة تماماً.
+        $wasPendingPayment = $reservation->status === Reservation::STATUS_PENDING_PAYMENT;
         $reservation->update(['status' => Reservation::STATUS_COMPLETED]);
         $info['status'] = Reservation::STATUS_COMPLETED;
         $info['status_label'] = Reservation::STATUS_LABELS[Reservation::STATUS_COMPLETED];
 
         return response()->json([
             'success' => true, 'result' => 'checked_in',
-            'message' => 'تم تسجيل الحضور بنجاح ✓',
+            'message' => $wasPendingPayment
+                ? 'تم تسجيل الحضور وتأكيد الدفع بنجاح ✓'
+                : 'تم تسجيل الحضور بنجاح ✓',
             'info'    => $info,
         ], 200);
     }

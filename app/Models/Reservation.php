@@ -11,16 +11,24 @@ class Reservation extends Model
 {
     use HasFactory;
 
-    public const STATUS_CONFIRMED = 'CONFIRMED'; // فعّالة (صالحة للدخول)
+    public const STATUS_CONFIRMED = 'CONFIRMED'; // فعّالة (صالحة للدخول، مجانية أو مدفوعة بالفعل)
+    public const STATUS_PENDING_PAYMENT = 'PENDING_PAYMENT'; // فعالية مدفوعة بانتظار إتمام الدفع
     public const STATUS_WAIT_LIST = 'WAIT_LIST'; // قائمة انتظار
     public const STATUS_COMPLETED = 'COMPLETED'; // مكتملة (تم تسجيل الحضور بالمسح)
     public const STATUS_CANCELLED = 'CANCELLED'; // ملغاة
 
     public const STATUS_LABELS = [
         self::STATUS_CONFIRMED => 'فعّالة',
+        self::STATUS_PENDING_PAYMENT => 'غير مدفوعة',
         self::STATUS_WAIT_LIST => 'قائمة انتظار',
         self::STATUS_COMPLETED => 'مكتملة',
         self::STATUS_CANCELLED => 'ملغاة',
+    ];
+
+    /** الحالات التي "تحجز مقعداً" فعلياً (تُحسب ضمن السعة، وتُلغى بإرجاع المقعد) */
+    public const SEAT_OCCUPYING_STATUSES = [
+        self::STATUS_CONFIRMED,
+        self::STATUS_PENDING_PAYMENT,
     ];
 
     protected $fillable = [
@@ -33,6 +41,12 @@ class Reservation extends Model
         'reservation_date',
         'seats_count',
         'status',
+    ];
+
+    // ✅ بدون هذا الـcast، يصل reservation_date كسلسلة نصية خام (string)
+    // وليس كائن Carbon، فيفشل أي استدعاء لـ->format() عليه (كما بـReservationResource).
+    protected $casts = [
+        'reservation_date' => 'date',
     ];
 
     /**
