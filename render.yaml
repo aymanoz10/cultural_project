@@ -1,68 +1,47 @@
-# Render Blueprint — انشر بضغطة واحدة: New + → Blueprint → اختر هذا المستودع.
-# القيم sync:false تُدخَل يدوياً في لوحة Render (أسرار). البقية تُضبط تلقائياً.
 services:
   - type: web
-    name: cultural-project
-    runtime: docker
+    name: cultural-projects
+    env: docker
+    region: oregon
     plan: free
-    region: frankfurt            # اختر الأقرب لك (frankfurt/oregon/singapore ...)
-    dockerfilePath: ./Dockerfile
-    healthCheckPath: /up
     envVars:
-      # ---------- التطبيق ----------
       - key: APP_NAME
-        value: Cultural-Project
+        value: CulturalSystem
       - key: APP_ENV
         value: production
-      - key: APP_DEBUG
-        value: "false"
       - key: APP_KEY
-        sync: false              # php artisan key:generate --show  ثم ألصقه
+        value: base64:ضع_مفتاح_التطبيق_هنا
+      - key: APP_DEBUG
+        value: false
       - key: APP_URL
-        sync: false              # https://<اسم-خدمتك>.onrender.com
+        value: https://cultural-projects.onrender.com
       - key: LOG_CHANNEL
-        value: stderr            # سجلّات Render تقرأ stderr مباشرة
-
-      # ---------- قاعدة البيانات: Neon (PostgreSQL) ----------
+        value: stderr
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
-        sync: false              # ep-xxx-pooler.<region>.aws.neon.tech
+        value: ep-little-bird-za81fm0r-pooler.c-2.eu-west-2.aws.neon.tech
       - key: DB_PORT
-        value: "5432"
+        value: 5432
       - key: DB_DATABASE
-        sync: false              # عادةً: neondb
+        value: neondb
       - key: DB_USERNAME
-        sync: false
+        value: neondb_owner
       - key: DB_PASSWORD
-        sync: false
+        value: npg_0UkFT9VJpCfY
       - key: DB_SSLMODE
-        value: require           # Neon يفرض SSL
-
-      # ---------- الحالة على قاعدة البيانات (لأن قرص Render مؤقّت) ----------
-      - key: SESSION_DRIVER
-        value: database
-      - key: CACHE_STORE
-        value: database
-      - key: QUEUE_CONNECTION
-        value: database
-
-      # ---------- التخزين: Cloudflare R2 (متوافق S3) ----------
+        value: require
       - key: FILESYSTEM_DISK
-        value: public
-      - key: PUBLIC_DISK_DRIVER
         value: s3
-      - key: BOOKS_DISK_DRIVER
-        value: s3
-      - key: R2_ENDPOINT
-        sync: false              # https://<account-id>.r2.cloudflarestorage.com
-      - key: R2_ACCESS_KEY_ID
-        sync: false
-      - key: R2_SECRET_ACCESS_KEY
-        sync: false
-      - key: R2_PUBLIC_BUCKET
-        sync: false              # bucket عام (للأغلفة/الصور)
-      - key: R2_PRIVATE_BUCKET
-        sync: false              # bucket خاص (لملفات PDF)
-      - key: PUBLIC_DISK_URL
-        sync: false              # رابط R2 العام: https://pub-xxxx.r2.dev
+      - key: AWS_ACCESS_KEY_ID
+        value: ff3503844e7122e0bc9822a4f7655809
+      - key: AWS_SECRET_ACCESS_KEY
+        value: 197d4f680bacfe8437f9c93581943d4e54810b169cb4c9cd8bd1d9eda4d044be
+      - key: AWS_DEFAULT_REGION
+        value: us-east-1
+      - key: AWS_BUCKET
+        value: cultural-public
+      - key: AWS_ENDPOINT
+        value: https://hmevzsgznrfafovymwef.storage.supabase.co/storage/v1/s3
+      - key: AWS_USE_PATH_STYLE_ENDPOINT
+        value: true
