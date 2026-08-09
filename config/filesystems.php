@@ -35,12 +35,36 @@ return [
             'throw' => false,
         ],
 
+        // القرص العام (صور الأغلفة والصور): محلي في التطوير، ويتحوّل إلى Cloudflare R2
+        // في الإنتاج بضبط PUBLIC_DISK_DRIVER=s3 — دون أي تعديل في المتحكّمات أو القوالب.
         'public' => [
-            'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
-            'visibility' => 'public',
-            'throw' => false,
+            'driver'                  => env('PUBLIC_DISK_DRIVER', 'local'),
+            'root'                    => storage_path('app/public'),
+            'url'                     => env('PUBLIC_DISK_URL', env('APP_URL').'/storage'),
+            'visibility'              => 'public',
+            'throw'                   => false,
+            // تُستخدم الحقول التالية فقط عندما PUBLIC_DISK_DRIVER=s3 (R2) —
+            'key'                     => env('R2_ACCESS_KEY_ID'),
+            'secret'                  => env('R2_SECRET_ACCESS_KEY'),
+            'region'                  => env('R2_REGION', 'auto'),
+            'bucket'                  => env('R2_PUBLIC_BUCKET'),
+            'endpoint'                => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+        ],
+
+        // قرص ملفات الكتب (PDF) الخاص: محلي في التطوير، R2 خاص في الإنتاج (BOOKS_DISK_DRIVER=s3).
+        // يُقدَّم عبر BookFileController الذي يتحوّل تلقائياً إلى روابط موقّتة موقّعة عند s3.
+        'books_private' => [
+            'driver'                  => env('BOOKS_DISK_DRIVER', 'local'),
+            'root'                    => storage_path('app/private/books'),
+            'visibility'              => 'private',
+            'throw'                   => false,
+            'key'                     => env('R2_ACCESS_KEY_ID'),
+            'secret'                  => env('R2_SECRET_ACCESS_KEY'),
+            'region'                  => env('R2_REGION', 'auto'),
+            'bucket'                  => env('R2_PRIVATE_BUCKET'),
+            'endpoint'                => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
         ],
 
         // قرص خاص لملفات الكتب (PDF): لا رابط عام ولا symlink — يُقدَّم عبر BookFileController فقط
